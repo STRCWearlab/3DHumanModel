@@ -15,11 +15,13 @@ import java.util.Map;
  */
 public class Const {
     
+    public static boolean animationStart=false;
+    
     private static String[] command = 
-    {"rha","rla","rua","lha","lla","lua","hea","tor","rth","rsh","lth","lsh"};
+    {"-rha","-rla","-rua","-lha","-lla","-lua","-hea","-tor","-rth","-rsh","-lth","-lsh"};
     
     private static String[] priorQuatCommand =
-    {"prha","prla","prua","plha","plla","plua","phea","ptor","prth","prsh","plth","plsh"};
+    {"-prha","-prla","-prua","-plha","-plla","-plua","-phea","-ptor","-prth","-prsh","-plth","-plsh"};
 
     public enum BindColumIndex {
 

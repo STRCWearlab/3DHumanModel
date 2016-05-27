@@ -30,17 +30,20 @@ public class TCPDataClient extends Thread {
     private Quaternion[] animationPacket;
     private HashMap<Integer, Float[]> columnIndexMap;
     private Quaternion[] priorQuaternions;
+    private boolean isExecuted = false;
 
     public TCPDataClient(Object lock, String[] args) {
         this.lock = lock;
         animationPacket = new Quaternion[12];
+        initializeSocket(args[0]);
         parseParameters(args);
-        initializeSocket();
     }
 
     @Override
     public void run() {
         String line;
+
+        int countLine = 0;
 
         String[] values;
 
@@ -49,19 +52,23 @@ public class TCPDataClient extends Thread {
         float qy;
         float qz;
 
-        while (true) {
+        while (isExecuted) {
             try {
                 line = inputBuffer.readLine();
                 values = line.split(" ");
                 for (int i = 0; i < 12; i++) {
-                    try{
+                    try {
                         Float[] columnValues = columnIndexMap.get(i);
-                        qw=Float.parseFloat(values[columnValues[0].intValue()]);
-                        qx=Float.parseFloat(values[columnValues[1].intValue()]);
-                        qy=Float.parseFloat(values[columnValues[2].intValue()]);
-                        qz=Float.parseFloat(values[columnValues[3].intValue()]);
-                        animationPacket[i] = new Quaternion(qx, qy, qz, qw);
-                    }catch(NullPointerException e){
+                        qw = Float.parseFloat(values[columnValues[0].intValue()]);
+                        qx = Float.parseFloat(values[columnValues[1].intValue()]);
+                        qy = Float.parseFloat(values[columnValues[2].intValue()]);
+                        qz = Float.parseFloat(values[columnValues[3].intValue()]);
+                        synchronized (lock) {
+                            Const.animationStart = true;
+                            //animationPacket[i] = Quaternion.IDENTITY;
+                            animationPacket[i] = preProcessingQuaternion(new Quaternion(qx / 1000.0f, qy / 1000.0f, qz / 1000.0f, qw / 1000.0f));
+                        }
+                    } catch (NullPointerException e) {
                         animationPacket[i] = Quaternion.IDENTITY;
                     }
                 }
@@ -69,25 +76,45 @@ public class TCPDataClient extends Thread {
                 Logger.getLogger(TCPDataClient.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        try {
+            inputBuffer.close();
+            listenSocket.close();
+            connectedSocket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(TCPDataClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
-    public synchronized Quaternion[] getData() {
-        return new Quaternion[12];
+    public Quaternion[] getData() {
+        synchronized (lock) {
+            return animationPacket;
+        }
     }
 
+    /**
+     * Parse parameters to bind column of the dataset with the quaternion of the
+     * correct limb.
+     *
+     * @param args
+     */
     private void parseParameters(String[] args) {
         columnIndexMap = new HashMap<>();
         for (int i = 0; i < 12; i++) {
             columnIndexMap.put(i, new Float[4]);
         }
         try {
+            //If the numbers of the parameters (-1 for the port number) isn't
+            //multiple of 5, throw an exception
             if ((args.length - 1) % 5 != 0) {
                 throw new WrongNumberArgsException("Wrong number of parameters!");
             }
-            tcpPort = Integer.parseInt(args[0]);
-            for (int i = 1; i < args.length; i += 4) {
+            for (int i = 1; i < args.length; i += 5) {
+
+                //Read the command
                 String param = args[i];
-                Float[] paramsValues = new Float[0];
+
+                //Get the index of the array corresponding to the command
+                Float[] paramsValues = new Float[4];
                 Integer limbColIndex = null;
                 Integer limbPriorIndex = null;
                 try {
@@ -120,8 +147,9 @@ public class TCPDataClient extends Thread {
         }
     }
 
-    private void initializeSocket() {
+    private void initializeSocket(String arg) {
         try {
+            tcpPort = Integer.parseInt(arg);
             listenSocket = new ServerSocket(tcpPort);
             connectedSocket = listenSocket.accept();
             inputBuffer = new BufferedReader(
@@ -130,6 +158,41 @@ public class TCPDataClient extends Thread {
         } catch (IOException ex) {
             Logger.getLogger(TCPDataClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public void stopExecution() {
+        synchronized (lock) {
+            isExecuted = false;
+        }
+    }
+
+    public void startExecution() {
+        synchronized (lock) {
+            isExecuted = true;
+        }
+        this.start();
+    }
+
+    private Quaternion preProcessingQuaternion(Quaternion quaternion) {
+        //Normalize quaternion to adjust lost of precision using mG.
+        Quaternion outputQuat = normalizeQuaternion(quaternion);
+        //Quaternion outputQuat = Quaternion.IDENTITY;
+        //Convert the reference system from left hand (Xsense) to right hand (opengl), swapping x-axis with z-axis
+        //outputQuat = new Quaternion(outputQuat.getZ(), outputQuat.getY(), outputQuat.getX(), outputQuat.getW());
+        // Compose two rotations:
+        // First, rotate the rendered model to face inside the screen (negative z)
+        // Then, rotate the rendered model to have the torso horizontal (facing downwards, leg facing north)
+        Quaternion quat1 = new Quaternion((float) Math.sin(Math.toRadians(-90.0 / 2.0)), 0.0f, 0.0f, (float) Math.cos(Math.toRadians(-90.0 / 2.0)));
+        quat1.normalizeLocal();
+        Quaternion quat2 = new Quaternion(0.0f, (float) Math.sin(Math.toRadians(+180.0 / 2.0)), 0.0f, (float) Math.cos(Math.toRadians(180.0 / 2.0)));
+        quat2.normalizeLocal();
+        Quaternion preRot = quat1.mult(quat2);
+        //Quaternion preRot = new Quaternion((float) Math.cos(Math.toRadians(180.0 / 2.0)), 0.0f, (float) Math.sin(Math.toRadians(+180.0 / 2.0)), 0.0f);
+        return outputQuat;
+    }
+
+    private Quaternion normalizeQuaternion(Quaternion quaternion) {
+        return quaternion.normalizeLocal();
     }
 
 }
