@@ -14,25 +14,25 @@ import java.util.Map;
  * @author mathias
  */
 public class Const {
-    
-    public static boolean animationStart=false;
-    
-    private static String[] command = 
-    {"-rha","-rla","-rua","-lha","-lla","-lua","-hea","-tor","-rth","-rsh","-lth","-lsh"};
-    
-    private static String[] priorQuatCommand =
-    {"-prha","-prla","-prua","-plha","-plla","-plua","-phea","-ptor","-prth","-prsh","-plth","-plsh"};
+
+    public static boolean animationStart = false;
+
+    private static String[] command
+            = {"-tor", "-hea", "-rua", "-rla", "-rha", "-lua", "-lla", "-lha", "-rth", "-rsh", "-lth", "-lsh"};
+
+    private static String[] priorQuatCommand
+            = {"-ptor", "-phea", "-prua", "-prla", "-prha", "-plua", "-plla", "-plha", "-prth", "-prsh", "-plth", "-plsh"};
 
     public enum BindColumIndex {
 
-        rha(0),
-        rla(1),
+        tor(0),
+        hea(1),
         rua(2),
-        lha(3),
-        lla(4),
+        rla(3),
+        rha(4),
         lua(5),
-        hea(6),
-        tor(7),
+        lla(6),
+        lha(7),
         rth(8),
         rsh(9),
         lth(10),
@@ -63,19 +63,19 @@ public class Const {
     }
 
     public enum PriorQuatIndex {
-        prha(0),
-        prla(1),
+        ptor(0),
+        phea(1),
         prua(2),
-        plha(3),
-        plla(4),
+        prla(3),
+        prha(4),
         plua(5),
-        phea(6),
-        ptor(7),
+        plla(6),
+        plha(7),
         prth(8),
         prsh(9),
         plth(10),
         plsh(11);
-        
+
         private static final Map<String, PriorQuatIndex> lookup
                 = new HashMap<>();
 

@@ -31,9 +31,9 @@ public class Main extends SimpleApplication {
     private TCPDataClient tcpDataClient;
     private Bone[] bones;
     private String[] bonesName = {
-        "RightHand", "RightForeArm", "RightArm",
-        "LeftHand", "LeftForeArm", "LeftArm",
-        "Head", "LowerBack",
+        "LowerBack", "Head",
+        "RightArm", "RightForeArm", "RightHand",
+        "LeftArm", "LeftForeArm", "LeftHand",
         "RightUpLeg", "RightLeg",
         "LeftUpLeg", "LeftLeg"
     };
@@ -51,7 +51,7 @@ public class Main extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         System.out.println("Application initialization started");
-        human = assetManager.loadModel("Models/HumanDressedNormalPose/Human_2_dressed_normalpose.mesh.j3o");
+        human = assetManager.loadModel("Models/HumanDressedDivided/Human_2_dressed_normalpose.mesh.j3o");
         human.setLocalTranslation(0, -8, 0);
         animControl = human.getControl(AnimControl.class);
         skeleton = animControl.getSkeleton();
@@ -67,7 +67,7 @@ public class Main extends SimpleApplication {
         rootNode.addLight(light);
 
         Node refNode = new Node("RefNode");
-        
+
         Line xAxisline = new Line(new Vector3f(0, 0, 0), new Vector3f(3, 0, 0));
         Geometry xAxisGeometry = new Geometry("xAxis", xAxisline);
         Material xLineMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -81,20 +81,20 @@ public class Main extends SimpleApplication {
         yLineMaterial.getAdditionalRenderState().setLineWidth(2);
         yLineMaterial.setColor("Color", ColorRGBA.Blue);
         yAxisGeometry.setMaterial(yLineMaterial);
-        
+
         Line zAxisline = new Line(new Vector3f(0, 0, 0), new Vector3f(0, 0, 3));
         Geometry zAxisGeometry = new Geometry("zAxis", zAxisline);
         Material zLineMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         zLineMaterial.getAdditionalRenderState().setLineWidth(2);
         zLineMaterial.setColor("Color", ColorRGBA.Red);
         zAxisGeometry.setMaterial(zLineMaterial);
-        
+
         refNode.attachChild(xAxisGeometry);
         refNode.attachChild(yAxisGeometry);
         refNode.attachChild(zAxisGeometry);
-        
+
         refNode.setLocalTranslation(-7, 0, 0);
-        
+
         rootNode.attachChild(refNode);
 
         //Set color background to white
@@ -131,8 +131,8 @@ public class Main extends SimpleApplication {
         };
         //bones[7].setUserControl(true);
         //bones[7].setUserTransforms(Vector3f.ZERO, new Quaternion(anglesFaceFront), Vector3f.UNIT_XYZ);
-        human.setLocalRotation(new Quaternion(rotateModel));
-        layingQuat = new Quaternion(anglesFaceFront);
+        //human.setLocalRotation(new Quaternion(rotateModel));
+        //layingQuat = new Quaternion(anglesFaceFront);
 
     }
 
@@ -158,13 +158,32 @@ public class Main extends SimpleApplication {
     private void animateModel() {
         for (int i = 0; i < 12; i++) {
             bones[i].setUserControl(true);
-            if (i == 7) {
-                bones[i].setLocalRotation(animationQuaternions[i].mult(layingQuat));
-                //bones[i].setUserTransforms(Vector3f.ZERO, animationQuaternions[i].mult(layingQuat), Vector3f.UNIT_XYZ);
-            } else {
-                bones[i].setUserTransforms(Vector3f.ZERO, animationQuaternions[i], Vector3f.UNIT_XYZ);
-            }
+            Quaternion rotQuat = preProcessingQuaternion(i);
+            //bones[i].setLocalRotation(rotQuat);
+            bones[i].setUserTransforms(Vector3f.ZERO, rotQuat, Vector3f.UNIT_XYZ);
         }
         skeleton.updateWorldVectors();
+    }
+
+    private Quaternion preProcessingQuaternion(int i) {
+
+        if (animationQuaternions[i] == null) {
+            return Quaternion.IDENTITY;
+        }
+
+        //Normalize quaternion to adjust lost of precision using mG.
+        Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
+
+        // Compose two rotations:
+        // First, rotate the rendered model to face inside the screen (negative z)
+        // Then, rotate the rendered model to have the torso horizontal (facing downwards, leg facing north)
+        Quaternion quat1 = new Quaternion((float) Math.sin(Math.toRadians(-90.0 / 2.0)), 0.0f, 0.0f, (float) Math.cos(Math.toRadians(-90.0 / 2.0)));
+        quat1.normalizeLocal();
+        Quaternion quat2 = new Quaternion(0.0f, (float) Math.sin(Math.toRadians(+180.0 / 2.0)), 0.0f, (float) Math.cos(Math.toRadians(180.0 / 2.0)));
+        quat2.normalizeLocal();
+        Quaternion preRot = quat1.mult(quat2);
+
+        return outputQuat.mult(preRot);
+
     }
 }

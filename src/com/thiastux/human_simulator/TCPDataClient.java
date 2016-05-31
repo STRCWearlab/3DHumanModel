@@ -66,10 +66,12 @@ public class TCPDataClient extends Thread {
                         synchronized (lock) {
                             Const.animationStart = true;
                             //animationPacket[i] = Quaternion.IDENTITY;
-                            animationPacket[i] = preProcessingQuaternion(new Quaternion(qx / 1000.0f, qy / 1000.0f, qz / 1000.0f, qw / 1000.0f));
+                            //animationPacket[i] = preProcessingQuaternion(new Quaternion(qx / 1000.0f, qy / 1000.0f, qz / 1000.0f, qw / 1000.0f));
+                            //animationPacket[i] = preProcessingQuaternion(new Quaternion(qy / 1000.0f, qz / 1000.0f, qx / 1000.0f, qw / 1000.0f), i);
+                            animationPacket[i] = new Quaternion(qy / 1000.0f, qz / 1000.0f, qx / 1000.0f, qw / 1000.0f);
                         }
                     } catch (NullPointerException e) {
-                        animationPacket[i] = Quaternion.IDENTITY;
+                        animationPacket[i] = null;
                     }
                 }
             } catch (IOException ex) {
@@ -173,7 +175,7 @@ public class TCPDataClient extends Thread {
         this.start();
     }
 
-    private Quaternion preProcessingQuaternion(Quaternion quaternion) {
+    private Quaternion preProcessingQuaternion(Quaternion quaternion, int i) {
         //Normalize quaternion to adjust lost of precision using mG.
         Quaternion outputQuat = normalizeQuaternion(quaternion);
         //Quaternion outputQuat = Quaternion.IDENTITY;
@@ -187,8 +189,16 @@ public class TCPDataClient extends Thread {
         Quaternion quat2 = new Quaternion(0.0f, (float) Math.sin(Math.toRadians(+180.0 / 2.0)), 0.0f, (float) Math.cos(Math.toRadians(180.0 / 2.0)));
         quat2.normalizeLocal();
         Quaternion preRot = quat1.mult(quat2);
-        //Quaternion preRot = new Quaternion((float) Math.cos(Math.toRadians(180.0 / 2.0)), 0.0f, (float) Math.sin(Math.toRadians(+180.0 / 2.0)), 0.0f);
-        return outputQuat;
+        if (i < 3) {
+            float[] rArmsAngles = {0.0f, (float) Math.toRadians(-90), 0.0f};
+            preRot = preRot.mult(new Quaternion(rArmsAngles));
+            return outputQuat.mult(preRot);
+        } else if(i<7){
+            float[] lArmsAngles = {0.0f, (float) Math.toRadians(90), 0.0f};
+            preRot = preRot.mult(new Quaternion(lArmsAngles));
+            return outputQuat.mult(preRot);
+        }
+        return outputQuat.mult(preRot);
     }
 
     private Quaternion normalizeQuaternion(Quaternion quaternion) {
