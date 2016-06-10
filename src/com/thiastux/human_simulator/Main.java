@@ -38,16 +38,24 @@ public class Main extends SimpleApplication {
         "RightUpLeg", "RightLeg",
         "LeftUpLeg", "LeftLeg"
     };
+
+    /*private String[] bonesName = {
+        "spine_03", "neck_01",
+        "upperarm_r", "lowerarm_r", "hand_r",
+        "upperarm_l", "lowerarm_l", "hand_l",
+        "thigh_r", "calf_r",
+        "thigh_l", "calf_l"
+    };*/
     private int animationIndex;
 
     public static void main(String[] args) {
         Main app = new Main(args);
         app.start();
     }
-    private Quaternion layingQuat;
+
     private Quaternion preRot;
-    private Quaternion qConjArmR;
-    private Quaternion qConjArmL;
+    private Quaternion qAlignArmR;
+    private Quaternion qAlignArmL;
 
     public Main(String[] args) {
         tcpDataClient = new TCPDataClient(this, args);
@@ -119,16 +127,17 @@ public class Main extends SimpleApplication {
         System.out.println(print + "    ");
 
         float[] qRArmAngles = {0f, 0f, (float) Math.toRadians(90)};
-        qConjArmR = new Quaternion(qRArmAngles);
-        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qConjArmR.getW(), qConjArmR.getX(), qConjArmR.getY(), qConjArmR.getZ());
+        qAlignArmR = new Quaternion(qRArmAngles);
+        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qAlignArmR.getW(), qAlignArmR.getX(), qAlignArmR.getY(), qAlignArmR.getZ());
         System.out.println(print + "    ");
 
         float[] qLArmAngles = {0f, 0f, (float) Math.toRadians(-90)};
-        qConjArmL = new Quaternion(qLArmAngles);
-        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qConjArmL.getW(), qConjArmL.getX(), qConjArmL.getY(), qConjArmL.getZ());
+        qAlignArmL = new Quaternion(qLArmAngles);
+        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
         System.out.println(print + "    ");
 
-        
+        animationIndex = 0;
+
     }
 
     @Override
@@ -137,6 +146,7 @@ public class Main extends SimpleApplication {
             getData();
             animateModel();
         }
+        //debugBoneAnimation(5, 0, true);
     }
 
     @Override
@@ -153,17 +163,57 @@ public class Main extends SimpleApplication {
     private void animateModel() {
         for (int i = 0; i < 12; i++) {
             bones[i].setUserControl(true);
-            Quaternion rotQuat = preProcessingQuaternion(i, animationIndex % 250 == 0 && animationIndex < 2001);
-            //bones[i].setLocalRotation(rotQuat);
+            //animationIndex % 250 == 0 && animationIndex < 2001
+            Quaternion rotQuat = preProcessingQuaternion(i);
             if (rotQuat != null) {
                 bones[i].setUserTransforms(Vector3f.ZERO, rotQuat, Vector3f.UNIT_XYZ);
             }
         }
         animationIndex++;
-        if (animationIndex % 250 == 0 && animationIndex < 2001) {
+        if (false) {
             System.out.println("");
         }
         skeleton.updateWorldVectors();
+    }
+    
+    private Quaternion preProcessingQuaternion(int i) {
+        if (animationQuaternions[i] == null) {
+            return Quaternion.IDENTITY;
+        }
+        
+        Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
+        
+        if (i == 2 || i == 3 || i == 4) {
+            //if (i == 2) {
+            outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+            outputQuat = outputQuat.mult(qAlignArmR);
+        }
+
+        if (i == 5 || i == 6 || i == 7) {
+            //if (i == 5) {
+            outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+            outputQuat = outputQuat.mult(qAlignArmL);
+        }
+
+        outputQuat = outputQuat.normalizeLocal();
+        outputQuat = outputQuat.mult(preRot);
+
+        previousQuaternions[i] = outputQuat.normalizeLocal();
+
+        outputQuat = conjugate(getPrevLimbQuaternion(i)).mult(outputQuat);
+
+        outputQuat = outputQuat.normalizeLocal();
+        
+        if (i == 2 || i == 3 || i == 4) {
+            outputQuat = new Quaternion(-outputQuat.getX(), -outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+        }
+
+        if (i == 5 || i == 6 || i == 7) {
+            outputQuat = new Quaternion(-outputQuat.getX(), -outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+        }
+        
+        return outputQuat;
+        
     }
 
     private Quaternion preProcessingQuaternion(int i, boolean par) {
@@ -172,8 +222,11 @@ public class Main extends SimpleApplication {
             return Quaternion.IDENTITY;
         }
 
+        
         //Normalize quaternion to adjust lost of precision using mG.
         Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
+        
+        
 
         if (par) {
             String print = String.format("q[%d]: %.1f %.1f %.1f %.1f", i, outputQuat.getW(), outputQuat.getX(), outputQuat.getY(), outputQuat.getZ());
@@ -182,14 +235,17 @@ public class Main extends SimpleApplication {
 
         if (i == 2 || i == 3 || i == 4) {
             //if (i == 2) {
-            outputQuat = outputQuat.mult(qConjArmR);
+            outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+            outputQuat = outputQuat.mult(qAlignArmR);
         }
 
         if (i == 5 || i == 6 || i == 7) {
             //if (i == 5) {
-            outputQuat = outputQuat.mult(qConjArmL);
+            outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+            outputQuat = outputQuat.mult(qAlignArmL);
         }
 
+        outputQuat = outputQuat.normalizeLocal();
         outputQuat = outputQuat.mult(preRot);
 
         if (par) {
@@ -197,19 +253,9 @@ public class Main extends SimpleApplication {
             System.out.print(print + "    ");
         }
 
-        /*if(i==0){
-            Quaternion hipsQuaternion = new Quaternion();
-            hipsQuaternion.set(0f, outputQuat.mult(preRot).getY(), 0f, 0f);
-            hipsQuaternion.normalizeLocal();
-            Bone hips = skeleton.getBone("Hips");
-            hips.setUserControl(true);
-            hips.setUserTransforms(Vector3f.ZERO, hipsQuaternion, Vector3f.UNIT_XYZ);
-        }*/
-        if (i == 2 || i == 5 || i == 0) {
-            outputQuat = outputQuat.mult(conjugate(getPrevLimbQuaternion(i)));
-        } else {
-            outputQuat = outputQuat.mult(conjugate(getPrevLimbQuaternion(i).mult(preRot)));
-        }
+        previousQuaternions[i] = outputQuat.normalizeLocal();
+
+        outputQuat = outputQuat.mult(conjugate(getPrevLimbQuaternion(i)));
 
         outputQuat = outputQuat.normalizeLocal();
 
@@ -217,8 +263,6 @@ public class Main extends SimpleApplication {
             String print = String.format("q[%d]*conj(prev): %.1f %.1f %.1f %.1f", i, outputQuat.getW(), outputQuat.getX(), outputQuat.getY(), outputQuat.getZ());
             System.out.print(print + "    ");
         }
-
-        previousQuaternions[i] = outputQuat;
 
         return outputQuat;
 
@@ -282,4 +326,31 @@ public class Main extends SimpleApplication {
 
         rootNode.attachChild(refNode);
     }
+
+    private void debugBoneAnimation(int boneIndex, int axis, boolean counterClockWise) {
+        if (counterClockWise) {
+            animationIndex++;
+        } else {
+            animationIndex--;
+        }
+        Quaternion rot = new Quaternion();
+        switch (axis) {
+            case 0:
+                rot = new Quaternion(new float[]{(float) Math.toRadians(animationIndex % 360), 0f, 0f});
+                break;
+            case 1:
+                rot = new Quaternion(new float[]{0f, (float) Math.toRadians(animationIndex % 360), 0f});
+                break;
+            case 2:
+                rot = new Quaternion(new float[]{0f, 0f, (float) Math.toRadians(animationIndex % 360)});
+                break;
+        }
+        bones[boneIndex].setUserControl(true);
+        bones[boneIndex].setUserTransforms(Vector3f.ZERO,
+                rot,
+                Vector3f.UNIT_XYZ);
+
+        skeleton.updateWorldVectors();
+    }
+
 }

@@ -43,8 +43,6 @@ public class TCPDataClient extends Thread {
     public void run() {
         String line;
 
-        int countLine = 0;
-
         String[] values;
 
         float qw;
@@ -114,15 +112,18 @@ public class TCPDataClient extends Thread {
 
                 //Read the command
                 String param = args[i];
+                
+                if(param.endsWith("l"))
+                    Const.useLegs=true;
 
                 //Get the index of the array corresponding to the command
                 Float[] paramsValues = new Float[4];
                 Integer limbColIndex = null;
                 Integer limbPriorIndex = null;
                 try {
-                    limbColIndex = Const.BindColumIndex.get(args[i]).getCode();
+                    limbColIndex = Const.BindColumIndex.get(param).getCode();
                 } catch (NullPointerException e) {
-                    limbPriorIndex = Const.PriorQuatIndex.get(args[i]).getCode();
+                    limbPriorIndex = Const.PriorQuatIndex.get(param).getCode();
                 }
                 paramsValues[0] = Float.parseFloat(args[i + 1]);
                 paramsValues[1] = Float.parseFloat(args[i + 2]);

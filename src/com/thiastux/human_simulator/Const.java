@@ -16,12 +16,23 @@ import java.util.Map;
 public class Const {
 
     public static boolean animationStart = false;
-
+    
+    public static boolean useLegs=false;
+    
     private static String[] command
-            = {"-tor", "-hea", "-rua", "-rla", "-rha", "-lua", "-lla", "-lha", "-rth", "-rsh", "-lth", "-lsh"};
+            = {"-tor", "-hea", "-rua", "-rla", "-rha", "-lua", "-lla", "-lha", "-rul", "-rll", "-lul", "-lll"};
 
     private static String[] priorQuatCommand
-            = {"-ptor", "-phea", "-prua", "-prla", "-prha", "-plua", "-plla", "-plha", "-prth", "-prsh", "-plth", "-plsh"};
+            = {"-ptor", "-phea", "-prua", "-prla", "-prha", "-plua", "-plla", "-plha", "-prul", "-prll", "-plul", "-plll"};
+    
+    static int TEST_STATUS;
+    public static final int DEMO=1000;
+    public static final int DRILL_TEST1=1001;
+    public static final int DRILL_TEST2=1002;
+    public static final int DRILL_TEST3=1003;
+    public static final int ADL_TEST1=2001;
+    public static final int ADL_TEST2=2002;
+    public static final int ADL_TEST3=2003;
 
     public enum BindColumIndex {
 
@@ -33,10 +44,10 @@ public class Const {
         lua(5),
         lla(6),
         lha(7),
-        rth(8),
-        rsh(9),
-        lth(10),
-        lsh(11);
+        rul(8),
+        rll(9),
+        lul(10),
+        lll(11);
 
         private static final Map<String, BindColumIndex> lookup
                 = new HashMap<>();
@@ -71,10 +82,10 @@ public class Const {
         plua(5),
         plla(6),
         plha(7),
-        prth(8),
-        prsh(9),
-        plth(10),
-        plsh(11);
+        prul(8),
+        prll(9),
+        plul(10),
+        plll(11);
 
         private static final Map<String, PriorQuatIndex> lookup
                 = new HashMap<>();
