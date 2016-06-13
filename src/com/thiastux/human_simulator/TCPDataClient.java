@@ -63,9 +63,6 @@ public class TCPDataClient extends Thread {
                         qz = Float.parseFloat(values[columnValues[3].intValue()]);
                         synchronized (lock) {
                             Const.animationStart = true;
-                            //animationPacket[i] = Quaternion.IDENTITY;
-                            //animationPacket[i] = preProcessingQuaternion(new Quaternion(qx / 1000.0f, qy / 1000.0f, qz / 1000.0f, qw / 1000.0f));
-                            //animationPacket[i] = preProcessingQuaternion(new Quaternion(qy / 1000.0f, qz / 1000.0f, qx / 1000.0f, qw / 1000.0f), i);
                             animationPacket[i] = new Quaternion(qy / 1000.0f, qz / 1000.0f, qx / 1000.0f, qw / 1000.0f);
                         }
                     } catch (NullPointerException e) {

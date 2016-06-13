@@ -25,49 +25,42 @@ public class DataLoader extends Thread {
 
     private HashMap<Integer, List<DatasetChunk>> testDrillDatasetHashMap;
     private HashMap<Integer, List<DatasetChunk>> testAdlDatasetHashMap;
-    
+
     private String drillDatasetPath;
     private String adlDatasetPath;
     private HashMap<Integer, Float[]> columnIndexMap;
     private List<Quaternion[]> demoQuaternionsList;
 
-    private final int DEMO_DURATION = 300;
-    private final int TEST1_DURATION = 300;
+    private final int DEMO_DURATION = 5;
+    private final int TEST1_DURATION = 10;
     private final int SAMPLING_RATE = 33;
     private List<Test1Entry> test1DrillQuaternionsList;
     private List<Test1Entry> test1AdlQuaternionsList;
-    
-    public Quaternion[] animationQuaternion;
+
+    public Quaternion[] animationQuaternions;
     public Test1Entry test1AnimationEntry;
 
-    public static void main(String[] args) {
-        new DataLoader("/home/mathias/Documents/Datasets/opp-ss-test/S1-Drill.dat",
-                "/home/mathias/Documents/Datasets/opp-ss-test/S1-Drill.dat",
-                args);
-    }
-    
-    
+    private final Object lock;
+    private TestLoader testLoader;
 
-    public DataLoader(String datasetPath1, String datasetPath2, String[] args) {
+    public DataLoader(String datasetPath1, String datasetPath2, Object lockObject, String[] args) {
+        lock = lockObject;
 
         this.drillDatasetPath = datasetPath1;
         this.adlDatasetPath = datasetPath2;
 
         demoQuaternionsList = new ArrayList<>();
-        
+
         testDrillDatasetHashMap = new HashMap<>();
         test1DrillQuaternionsList = new ArrayList<>();
-        
+
         testAdlDatasetHashMap = new HashMap<>();
         test1AdlQuaternionsList = new ArrayList<>();
-        
+
+        animationQuaternions = new Quaternion[12];
+
         parseParameters(args);
         initializeDatasets();
-
-    }
-
-    public Quaternion[] getData() {
-        return new Quaternion[12];
     }
 
     private void initializeDatasets() {
@@ -210,12 +203,12 @@ public class DataLoader extends Thread {
             columnIndexMap.put(i, new Float[4]);
         }
         try {
-            //If the numbers of the parameters (-1 for the port number) isn't
+            //If the numbers of the parameters isn't
             //multiple of 5, throw an exception
-            if ((args.length - 1) % 5 != 0) {
+            if (args.length % 5 != 0) {
                 throw new WrongNumberArgsException("Wrong number of parameters!");
             }
-            for (int i = 1; i < args.length; i += 5) {
+            for (int i = 0; i < args.length; i += 5) {
 
                 //Read the command
                 String param = args[i];
@@ -237,6 +230,18 @@ public class DataLoader extends Thread {
         } catch (NullPointerException | IndexOutOfBoundsException | WrongNumberArgsException | NumberFormatException e) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
             System.exit(-1);
+        }
+    }
+
+    public Quaternion[] getQuaternionData() {
+        synchronized (lock) {
+            return animationQuaternions;
+        }
+    }
+    
+    public Test1Entry getTest1Data(){
+        synchronized (lock) {
+            return test1AnimationEntry;
         }
     }
 
@@ -269,25 +274,29 @@ public class DataLoader extends Thread {
     }
 
     private void runDemo() {
-        for(Quaternion[] quaternions : demoQuaternionsList){
-            animationQuaternion = quaternions;
+        for (Quaternion[] quaternions : demoQuaternionsList) {
+            synchronized (lock) {
+                animationQuaternions = quaternions;
+            }
             try {
                 Thread.sleep(SAMPLING_RATE);
             } catch (InterruptedException ex) {
                 Logger.getLogger(DataLoader.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        Const.DEMO_RUNNING=false;
     }
 
     private void runDrillTest1() {
-        for(Test1Entry testEntry : test1DrillQuaternionsList){
+        for (Test1Entry testEntry : test1DrillQuaternionsList) {
             test1AnimationEntry = testEntry;
             try {
                 Thread.sleep(SAMPLING_RATE);
             } catch (InterruptedException ex) {
-                Logger.getLogger(DataLoader.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(TestLoader.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        Const.TEST1_RUNNING=false;
     }
 
     private void runDrillTest2() {
@@ -305,4 +314,7 @@ public class DataLoader extends Thread {
     private void runAdlTest3() {
     }
 
+    void setTestLoader(TestLoader testLoader) {
+        this.testLoader = testLoader;
+    }
 }

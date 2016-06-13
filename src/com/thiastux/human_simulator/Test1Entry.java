@@ -23,6 +23,9 @@ class Test1Entry {
         this.activityLabel = activityLabel;
     }
 
+    Test1Entry() {
+    }
+
     public long getTimestamp() {
         return timestamp;
     }
@@ -34,5 +37,11 @@ class Test1Entry {
     public int getActivityLabel() {
         return activityLabel;
     }
+
+    @Override
+    public String toString() {
+        return "{" + "timestamp: " + timestamp + ", activityLabel: " + activityLabel + '}';
+    }
+    
     
 }

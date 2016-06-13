@@ -27,10 +27,11 @@ import java.util.HashMap;
  *
  * @author mathias
  */
-public class Test3 extends SimpleApplication{
-    
+public class Test3 extends SimpleApplication {
+
     private Stickman stickman;
     private DataLoader dataLoader;
+    private LogService logService;
     private Quaternion[] animationQuaternions = new Quaternion[12];
     private Geometry terrainGeometry;
     private Quaternion[] previousQuaternions = new Quaternion[12];
@@ -40,70 +41,78 @@ public class Test3 extends SimpleApplication{
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
-    
+
     public Test3(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
+    }
+
+    public Test3(DataLoader dataLoader, LogService logService) {
+        this.dataLoader = dataLoader;
+        this.logService = logService;
     }
     
     
     @Override
     public void simpleInitApp() {
-        System.out.println("Application initialization started");
+        System.out.println("Test 3 initialization started");
         addReferenceSystem();
 
         flyCam.setEnabled(false);
         ChaseCamera chaseCam = new ChaseCamera(cam, rootNode, inputManager);
         chaseCam.setDefaultHorizontalRotation((float) Math.toRadians(90));
-        chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30/2));
+        chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30 / 2));
         chaseCam.setDefaultDistance(50f);
 
         createHumanModel();
-        
+
         loadTerrain();
-        
+
         setLightAndShadow();
-        
+
         computeInitialQuaternions();
-                
+        
+        setPauseOnLostFocus(false);
+        
+        
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        boolean animStart = Const.animationStart;
-            getData();
-            animateModel();
+        getData();
+        animateModel();
     }
 
     @Override
     public void stop() {
-        System.out.println("Demo ended.");
+        System.out.println("Test 3 ended.");
         super.stop();
     }
 
     private void getData() {
-        animationQuaternions = dataLoader.getData();
+        animationQuaternions = dataLoader.getQuaternionData();
     }
 
     private void animateModel() {
-        for(int i=0;i<12;i++){
+        for (int i = 0; i < 12; i++) {
             Quaternion rotQuat = preProcessingQuaternion(i);
-            if(rotQuat!=null)
+            if (rotQuat != null) {
                 stickman.updateModelBonePosition(rotQuat, i);
+            }
         }
-        if(!Const.useLegs)
+        if (!Const.useLegs) {
             stickman.rotateLegs(previousQuaternions[0]);
+        }
     }
-    
+
     private Quaternion preProcessingQuaternion(int i) {
-        
+
         if (animationQuaternions[i] == null) {
             return null;
         }
 
-        
         //Normalize quaternion to adjust lost of precision using mG.
         Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
-        
+
         if (i == 2 || i == 3 || i == 4) {
             outputQuat = outputQuat.mult(qAlignArmR);
         }
@@ -123,11 +132,11 @@ public class Test3 extends SimpleApplication{
 
         return outputQuat;
     }
-    
+
     private Quaternion conjugate(Quaternion quaternion) {
         return new Quaternion(-quaternion.getX(), -quaternion.getY(), -quaternion.getZ(), quaternion.getW());
     }
-    
+
     private Quaternion getPrevLimbQuaternion(int i) {
         switch (i) {
             case 1:
@@ -191,16 +200,16 @@ public class Test3 extends SimpleApplication{
         Quad terrainMesh = new Quad(TERRAIN_WIDTH, TERRAIN_HEIGHT);
         terrainGeometry = new Geometry("Terrain", terrainMesh);
         terrainGeometry.setLocalRotation(new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f));
-        terrainGeometry.setLocalTranslation(-TERRAIN_WIDTH/2, -(stickman.TORSO_HEIGHT/2+stickman.ULEG_LENGTH+stickman.LLEG_LENGTH), TERRAIN_HEIGHT/2);
+        terrainGeometry.setLocalTranslation(-TERRAIN_WIDTH / 2, -(stickman.TORSO_HEIGHT / 2 + stickman.ULEG_LENGTH + stickman.LLEG_LENGTH), TERRAIN_HEIGHT / 2);
         Material terrainMaterial = new Material(assetManager,
                 "Common/MatDefs/Light/Lighting.j3md");
         terrainMaterial.setBoolean("UseMaterialColors", true);
         terrainMaterial.setColor("Ambient", ColorRGBA.White);
         terrainMaterial.setColor("Diffuse", ColorRGBA.White);
         terrainGeometry.setMaterial(terrainMaterial);
-        
+
         terrainGeometry.setShadowMode(RenderQueue.ShadowMode.Receive);
-        
+
         rootNode.attachChild(terrainGeometry);
     }
 
@@ -210,18 +219,18 @@ public class Test3 extends SimpleApplication{
         sun.setColor(ColorRGBA.White);
         sun.setDirection(new Vector3f(-.5f, -.5f, -.5f).normalizeLocal());
         rootNode.addLight(sun);
-        
+
         DirectionalLight sun2 = new DirectionalLight();
         sun2.setColor(ColorRGBA.White);
         sun2.setDirection(new Vector3f(.5f, .5f, .5f).normalizeLocal());
         rootNode.addLight(sun2);
-        
+
         rootNode.setShadowMode(RenderQueue.ShadowMode.Off);
-        
+
         stickman.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
         terrainGeometry.setShadowMode(RenderQueue.ShadowMode.Receive);
-        
-        final int SHADOWMAP_SIZE=512;
+
+        final int SHADOWMAP_SIZE = 512;
         DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, SHADOWMAP_SIZE, 3);
         dlsr.setLight(sun);
         viewPort.addProcessor(dlsr);
@@ -232,9 +241,9 @@ public class Test3 extends SimpleApplication{
         FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
         fpp.addFilter(dlsf);
         viewPort.addProcessor(fpp);
-        
+
     }
-    
+
     private void computeInitialQuaternions() {
         // Compose two rotations:
         // First, rotate the rendered model to face inside the screen (negative z)
@@ -253,10 +262,10 @@ public class Test3 extends SimpleApplication{
         qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
         print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
         System.out.println(print + "    ");
-        
-        for(int i=0;i<12;i++)
+
+        for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
+        }
 
     }
-    
 }

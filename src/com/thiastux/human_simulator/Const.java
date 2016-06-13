@@ -33,6 +33,10 @@ public class Const {
     public static final int ADL_TEST1=2001;
     public static final int ADL_TEST2=2002;
     public static final int ADL_TEST3=2003;
+    public static boolean isDemoLoaded = false;
+    public static boolean DEMO_RUNNING=true;
+    public static boolean TEST1_RUNNING=true;
+    public static boolean TEST2_RUNNING=true;
 
     public enum BindColumIndex {
 
