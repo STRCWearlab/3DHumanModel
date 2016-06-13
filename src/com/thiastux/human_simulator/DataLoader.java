@@ -36,6 +36,9 @@ public class DataLoader extends Thread {
     private final int SAMPLING_RATE = 33;
     private List<Test1Entry> test1DrillQuaternionsList;
     private List<Test1Entry> test1AdlQuaternionsList;
+    
+    public Quaternion[] animationQuaternion;
+    public Test1Entry test1AnimationEntry;
 
     public static void main(String[] args) {
         new DataLoader("/home/mathias/Documents/Datasets/opp-ss-test/S1-Drill.dat",
@@ -266,11 +269,25 @@ public class DataLoader extends Thread {
     }
 
     private void runDemo() {
-
+        for(Quaternion[] quaternions : demoQuaternionsList){
+            animationQuaternion = quaternions;
+            try {
+                Thread.sleep(SAMPLING_RATE);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(DataLoader.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     private void runDrillTest1() {
-
+        for(Test1Entry testEntry : test1DrillQuaternionsList){
+            test1AnimationEntry = testEntry;
+            try {
+                Thread.sleep(SAMPLING_RATE);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(DataLoader.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     private void runDrillTest2() {

@@ -27,8 +27,8 @@ import java.util.HashMap;
  *
  * @author mathias
  */
-public class StickmanDemo extends SimpleApplication{
-
+public class Test1 extends SimpleApplication {
+    
     private Stickman stickman;
     private DataLoader dataLoader;
     private Quaternion[] animationQuaternions = new Quaternion[12];
@@ -41,7 +41,7 @@ public class StickmanDemo extends SimpleApplication{
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
     
-    public StickmanDemo(DataLoader dataLoader) {
+    public Test1(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
     }
     
