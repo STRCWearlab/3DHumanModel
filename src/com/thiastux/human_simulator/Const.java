@@ -37,6 +37,11 @@ public class Const {
     public static boolean DEMO_RUNNING=true;
     public static boolean TEST1_RUNNING=true;
     public static boolean TEST2_RUNNING=true;
+    public static boolean TEST3_RUNNING=true;
+    public static boolean WAITING_TEST2_ANSWER=false; 
+    public static boolean NEXT_CHUNK=false;
+    public static boolean WAITING_TEST3_ANSWER=false;
+    
 
     public enum BindColumIndex {
 

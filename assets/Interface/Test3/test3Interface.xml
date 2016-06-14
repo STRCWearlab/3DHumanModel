@@ -1,11 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
-
-
-<root>
-    
-</root>
+<nifty xmlns="http://nifty-gui.sourceforge.net/nifty-1.3.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://nifty-gui.sourceforge.net/nifty-1.3.xsd http://nifty-gui.sourceforge.net/nifty-1.3.xsd">
+    <useStyles filename="nifty-default-styles.xml" />
+    <useControls filename="nifty-default-controls.xml" />
+    <screen id="controls" controller="com.thiastux.human_simulator.Test3">
+        <layer id="foreground" childLayout="horizontal">
+            <panel id="containerPanel" width="10%" childLayout="vertical" valign="center" backgroundColor="#ffff" height="100%" visibleToMouse="true">
+                <control name="button" label="Open Door" id="406516" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(406516)"/>
+                </control>
+                <control name="button" label="Close Door" id="404516" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(404516)"/>
+                </control>
+                <control name="button" label="Open Fridge" id="406520" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(406520)"/>
+                </control>
+                <control name="button" label="Close Fridge" id="404520" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(404520)"/>
+                </control>
+                <control name="button" label="Open Dishwasher" id="406505" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(406505)"/>
+                </control>
+                <control name="button" label="Close Dishwasher" id="404505" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(404505)"/>
+                </control>
+                <control name="button" label="Open Drawer" id="406515" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(406515)"/>
+                </control>
+                <control name="button" label="Close Drawer" id="404515" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(404515)"/>
+                </control>
+                <control name="button" label="Clean Table" id="408512" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(408512)"/>
+                </control>
+                <control name="button" label="Drink from Cup" id="407521" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(407521)"/>
+                </control>
+                <control name="button" label="Toggle Switch" id="405506" align="center" valign="center"
+                         visibleToMouse="true" >
+                    <interact onClick="saveTest3Event(405506)"/>
+                </control>
+            </panel>
+        </layer>
+    </screen>
+</nifty>

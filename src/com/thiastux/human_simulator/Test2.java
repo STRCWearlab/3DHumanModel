@@ -23,9 +23,13 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.controls.TextField;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -47,14 +51,26 @@ public class Test2 extends SimpleApplication implements ScreenController {
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
     private Nifty nifty;
     private NiftyJmeDisplay niftyDisplay;
+    private Object lock;
+    private HashMap<Integer, List<DatasetChunk>> datasetHashMap;
+    private int TEST_NUMSAMPLE = 4;
+    private List<DatasetChunk> testChunks;
+    private DatasetChunk activeChunk;
+    private int activeChunkIndex;
+    private long currentTimestamp;
+    private long previousTimestamp;
+    private float elapsedTime = 0;
+    private int SAMPLING_FREQUENCY = 33;
+    private int animationIndex=0;
 
     public Test2(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
     }
 
-    public Test2(DataLoader dataLoader, LogService logService) {
+    public Test2(DataLoader dataLoader, LogService logService, Object lock) {
         this.dataLoader = dataLoader;
         this.logService = logService;
+        this.lock = lock;
     }
 
     @Override
@@ -78,27 +94,43 @@ public class Test2 extends SimpleApplication implements ScreenController {
 
         computeInitialQuaternions();
 
+        loadDataset();
+
         setPauseOnLostFocus(false);
+
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        if (Const.TEST2_RUNNING) {
-            getData();
+        if (Const.TEST2_RUNNING && !Const.WAITING_TEST2_ANSWER) {
+            getData(tpf);
             animateModel();
-        } else {
+        } else if (Const.WAITING_TEST2_ANSWER) {
             askUserLabel();
+        } else if (!Const.TEST2_RUNNING) {
+            stop();
         }
     }
 
     @Override
     public void stop() {
-        System.out.println("Test 2 ended.");
+        logService.saveTest2Log();
         super.stop();
+        destroy();
     }
 
-    private void getData() {
-        animationQuaternions = dataLoader.getQuaternionData();
+    private void getData(float tpf) {
+        elapsedTime += tpf * 1000;
+        if (elapsedTime > SAMPLING_FREQUENCY) {
+            animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
+            try {
+                animationQuaternions = activeChunk.getDatasetChunk().get(animationIndex);
+                elapsedTime = 0;
+            } catch (IndexOutOfBoundsException e) {
+                animationIndex=0;
+                Const.WAITING_TEST2_ANSWER = true;
+            }
+        }
     }
 
     private void animateModel() {
@@ -278,6 +310,19 @@ public class Test2 extends SimpleApplication implements ScreenController {
 
     }
 
+    private void loadDataset() {
+        datasetHashMap = dataLoader.getDrillTestHashMap();
+        testChunks = new ArrayList<>();
+        for (Integer key : datasetHashMap.keySet()) {
+            List<DatasetChunk> chunks = datasetHashMap.get(key);
+            Collections.shuffle(chunks);
+            testChunks.addAll(chunks.subList(0, TEST_NUMSAMPLE));
+        }
+        Collections.shuffle(testChunks);
+        activeChunk = testChunks.get(activeChunkIndex);
+        previousTimestamp = System.currentTimeMillis();
+    }
+
     private void initializeInterface() {
         niftyDisplay = new NiftyJmeDisplay(assetManager,
                 inputManager,
@@ -286,7 +331,20 @@ public class Test2 extends SimpleApplication implements ScreenController {
 
         nifty = niftyDisplay.getNifty();
         nifty.fromXml("Interface/Test2/test2Interface.xml", "controls", this);
-        guiViewPort.addProcessor(niftyDisplay);
+    }
+
+    public void saveTest2Event() {
+        TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
+        String userLabel = userLabelTextField.getDisplayedText();
+        logService.addTest2Event("{userLabel:"+userLabel+", actualLabel: "+activeChunk.getActualLabel()+"},");
+        //System.out.println(userLabel);
+        try {
+            activeChunk = testChunks.get(++activeChunkIndex);
+        } catch (IndexOutOfBoundsException exception) {
+            Const.TEST2_RUNNING = false;
+        }
+        Const.WAITING_TEST2_ANSWER = false;
+        guiViewPort.removeProcessor(niftyDisplay);
     }
 
     @Override
@@ -302,8 +360,11 @@ public class Test2 extends SimpleApplication implements ScreenController {
     }
 
     private void askUserLabel() {
-
-        
+        if (guiViewPort.getProcessors().isEmpty()) {
+            guiViewPort.addProcessor(niftyDisplay);
+            TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
+            userLabelTextField.setText("");
+        }
     }
 
 }

@@ -21,13 +21,16 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
  * @author mathias
  */
-public class StickmanDemo extends SimpleApplication {
+public class Demo extends SimpleApplication {
 
     private Stickman stickman;
     private DataLoader dataLoader;
@@ -40,8 +43,12 @@ public class StickmanDemo extends SimpleApplication {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
+    private List<Quaternion[]> demoQuaternionList;
+    private int elapsedTime = 0;
+    private int SAMPLING_FREQUENCY=33;
+    private int animationIndex = 0;
 
-    public StickmanDemo(DataLoader dataLoader) {
+    public Demo(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
     }
 
@@ -63,6 +70,8 @@ public class StickmanDemo extends SimpleApplication {
         setLightAndShadow();
 
         computeInitialQuaternions();
+        
+        loadDataset();
 
         setPauseOnLostFocus(false);
     }
@@ -70,7 +79,7 @@ public class StickmanDemo extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         if (Const.DEMO_RUNNING) {
-            getData();
+            getData(tpf);
             animateModel();
         } else {
             stop();
@@ -83,8 +92,18 @@ public class StickmanDemo extends SimpleApplication {
         destroy();
     }
 
-    private void getData() {
-        animationQuaternions = dataLoader.getQuaternionData();
+    private void getData(float tpf) {
+        elapsedTime += tpf * 1000;
+        if (elapsedTime > SAMPLING_FREQUENCY) {
+            animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
+            try {
+                animationQuaternions = demoQuaternionList.get(animationIndex);
+                elapsedTime = 0;
+            } catch (IndexOutOfBoundsException e) {
+                Const.DEMO_RUNNING=false;
+                stop();
+            }
+        }
     }
 
     private void animateModel() {
@@ -254,5 +273,9 @@ public class StickmanDemo extends SimpleApplication {
         for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
         }
+    }
+    
+    private void loadDataset() {
+        demoQuaternionList = dataLoader.getDemoData();
     }
 }

@@ -34,7 +34,7 @@ class LogService {
     private File adlTest3File;
     private List<String> adlTest3Events;
 
-    public LogService(String folderPath, Long idLong) {
+    public LogService(String folderPath, String idLong) {
         
         logFolderPath = folderPath;
 
@@ -45,7 +45,7 @@ class LogService {
                 userFolder.mkdir();
             }
 
-            drillTest1File = new File(userFolder, "drillTest1.txt");
+            drillTest1File = new File(userFolder, "drillTest1_"+System.currentTimeMillis()+".txt");
 
             if (!drillTest1File.exists()) {
                 drillTest1File.createNewFile();
@@ -54,7 +54,7 @@ class LogService {
             drillTest1Events = new ArrayList<>();
             drillTest1Events.add("{drillTest1Events: [");
 
-            drillTest2File = new File(userFolder, "drillTest2.txt");
+            drillTest2File = new File(userFolder, "drillTest2_"+System.currentTimeMillis()+".txt");
 
             if (!drillTest2File.exists()) {
                 drillTest2File.createNewFile();
@@ -63,7 +63,7 @@ class LogService {
             drillTest2Events = new ArrayList<>();
             drillTest2Events.add("{drillTest2Events: [");
 
-            drillTest3File = new File(userFolder, "drillTest3.txt");
+            drillTest3File = new File(userFolder, "drillTest3_"+System.currentTimeMillis()+".txt");
 
             if (!drillTest3File.exists()) {
                 drillTest3File.createNewFile();
@@ -72,7 +72,7 @@ class LogService {
             drillTest3Events = new ArrayList<>();
             drillTest3Events.add("{drillTest3Events: [");
 
-            adlTest1File = new File(userFolder, "adlTest1.txt");
+            /*adlTest1File = new File(userFolder, "adlTest1_"+System.currentTimeMillis()+".txt");
 
             if (!adlTest1File.exists()) {
                 adlTest1File.createNewFile();
@@ -81,7 +81,7 @@ class LogService {
             adlTest1Events = new ArrayList<>();
             adlTest1Events.add("{adlTest1Events: [");
 
-            adlTest2File = new File(userFolder, "adlTest2.txt");
+            adlTest2File = new File(userFolder, "adlTest2_"+System.currentTimeMillis()+".txt");
 
             if (!adlTest2File.exists()) {
                 adlTest2File.createNewFile();
@@ -90,12 +90,12 @@ class LogService {
             adlTest2Events = new ArrayList<>();
             adlTest2Events.add("{adlTest2Events: [");
 
-            adlTest3File = new File(userFolder, "adlTest3.txt");
+            adlTest3File = new File(userFolder, "adlTest3_"+System.currentTimeMillis()+".txt");
             if (!adlTest3File.exists()) {
                 adlTest3File.createNewFile();
             }
             adlTest3Events = new ArrayList<>();
-            adlTest3Events.add("{adlTest3Events: [");
+            adlTest3Events.add("{adlTest3Events: [");*/
 
         } catch (IOException ex) {
             Logger.getLogger(LogService.class.getName()).log(Level.SEVERE, null, ex);
@@ -144,8 +144,10 @@ class LogService {
     public void saveTest2Log() {
         try {
             if (Const.TEST_STATUS == Const.DRILL_TEST2) {
+                drillTest2Events.add("]}");
                 Files.write(drillTest2File.toPath(), drillTest2Events, Charset.forName("UTF-8"));
             } else {
+                drillTest2Events.add("]}");
                 Files.write(adlTest2File.toPath(), adlTest2Events, Charset.forName("UTF-8"));
             }
         } catch (IOException ex) {
@@ -156,8 +158,10 @@ class LogService {
     public void saveTest3Log() {
         try {
             if (Const.TEST_STATUS == Const.DRILL_TEST3) {
+                drillTest3Events.add("]}");
                 Files.write(drillTest3File.toPath(), drillTest3Events, Charset.forName("UTF-8"));
             } else {
+                drillTest3Events.add("]}");
                 Files.write(adlTest3File.toPath(), adlTest3Events, Charset.forName("UTF-8"));
             }
         } catch (IOException ex) {

@@ -5,6 +5,7 @@
  */
 package com.thiastux.human_simulator;
 
+import com.jme3.app.LegacyApplication;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
@@ -25,6 +26,7 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -45,6 +47,11 @@ public class Test1 extends SimpleApplication {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
+    private List<Test1Entry> dataset;
+    private int animationIndex=0;
+    private int elapsedTime = 0;
+    private int SAMPLING_FREQUENCY=33;
+    
 
     public Test1(DataLoader dataLoader, LogService logService) {
         this.dataLoader = dataLoader;
@@ -77,6 +84,8 @@ public class Test1 extends SimpleApplication {
         setLightAndShadow();
 
         computeInitialQuaternions();
+        
+        loadDataset();
 
         initializeInputHandling();
 
@@ -86,7 +95,7 @@ public class Test1 extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         if (Const.TEST1_RUNNING) {
-            getData();
+            getData(tpf);
             animateModel();
         } else {
             stop();
@@ -100,9 +109,19 @@ public class Test1 extends SimpleApplication {
         destroy();
     }
 
-    private void getData() {
-        animationPacket = dataLoader.getTest1Data();
-        animationQuaternions = animationPacket.getQuaternions();
+    private void getData(float tpf) {
+        elapsedTime += tpf * 1000;
+        if (elapsedTime > SAMPLING_FREQUENCY) {
+            animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
+            try {
+                animationPacket = dataset.get(animationIndex);
+                animationQuaternions = animationPacket.getQuaternions();
+                elapsedTime = 0;
+            } catch (IndexOutOfBoundsException e) {
+                Const.TEST1_RUNNING=false;
+                stop();
+            }
+        }
     }
 
     private void animateModel() {
@@ -277,5 +296,9 @@ public class Test1 extends SimpleApplication {
         inputManager.addMapping("Test1Event",
                 new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addListener(actionListener, "Test1Event");
+    }
+
+    private void loadDataset() {
+        dataset = dataLoader.getTest1DrillQuaternionsList();
     }
 }

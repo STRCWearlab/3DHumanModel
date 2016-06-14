@@ -6,22 +6,27 @@
 package com.thiastux.human_simulator;
 
 import com.jme3.math.Quaternion;
+import com.sun.javafx.scene.control.skin.VirtualFlow;
+import com.sun.org.apache.xalan.internal.xsltc.compiler.NodeTest;
 import com.sun.org.apache.xpath.internal.functions.WrongNumberArgsException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.ArrayUtils;
 
 /**
  *
  * @author mathias
  */
-public class DataLoader extends Thread {
+public class DataLoader {
 
     private HashMap<Integer, List<DatasetChunk>> testDrillDatasetHashMap;
     private HashMap<Integer, List<DatasetChunk>> testAdlDatasetHashMap;
@@ -31,8 +36,8 @@ public class DataLoader extends Thread {
     private HashMap<Integer, Float[]> columnIndexMap;
     private List<Quaternion[]> demoQuaternionsList;
 
-    private final int DEMO_DURATION = 5;
-    private final int TEST1_DURATION = 10;
+    private final int DEMO_DURATION = 120;
+    private final int TEST1_DURATION = 600;
     private final int SAMPLING_RATE = 33;
     private List<Test1Entry> test1DrillQuaternionsList;
     private List<Test1Entry> test1AdlQuaternionsList;
@@ -43,6 +48,22 @@ public class DataLoader extends Thread {
     private final Object lock;
     private TestLoader testLoader;
 
+    private int[] openDoorLabels = {
+        406516, 406517
+    };
+
+    private int[] openDrawerLabels = {
+        406519, 406511, 406508
+    };
+
+    private int[] closeDoorLabels = {
+        404516, 404517
+    };
+
+    private int[] closeDrawerLabels = {
+        404519, 404511, 404508
+    };
+    
     public DataLoader(String datasetPath1, String datasetPath2, Object lockObject, String[] args) {
         lock = lockObject;
 
@@ -62,6 +83,18 @@ public class DataLoader extends Thread {
         parseParameters(args);
         initializeDatasets();
     }
+    
+    public List<Quaternion[]> getDemoData(){
+        return demoQuaternionsList;
+    }
+    
+    public HashMap<Integer, List<DatasetChunk>> getDrillTestHashMap(){
+        return testDrillDatasetHashMap;
+    }
+    
+    public List<Test1Entry> getTest1DrillQuaternionsList(){
+        return test1DrillQuaternionsList;
+    }
 
     private void initializeDatasets() {
         try {
@@ -80,7 +113,7 @@ public class DataLoader extends Thread {
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             readLine = bufferedReader.readLine();
             int previousActivityLabel = 0;
-            DatasetChunk chunk = new DatasetChunk();
+            DatasetChunk chunk = new DatasetChunk(previousActivityLabel);
             while (readLine != null) {
                 numLinesRead++;
                 System.out.print(numLinesRead * 100 / numLinesTot + "%\r");
@@ -109,27 +142,63 @@ public class DataLoader extends Thread {
                 }
                 if (activityLabel != 0) {
                     if (activityLabel != previousActivityLabel) {
-                        List<DatasetChunk> datasetChunks;
-                        if (testDrillDatasetHashMap.containsKey(previousActivityLabel)) {
-                            datasetChunks = testDrillDatasetHashMap.get(previousActivityLabel);
+                        List<DatasetChunk> datasetChunks = null;
+                        if (ArrayUtils.contains(openDoorLabels, previousActivityLabel)) {
+                            if (testDrillDatasetHashMap.containsKey(openDoorLabels[0])) {
+                                datasetChunks = testDrillDatasetHashMap.get(openDoorLabels[0]);
+                            } else {
+                                datasetChunks = new ArrayList<>();
+                            }
+                            datasetChunks.add(chunk);
+                            testDrillDatasetHashMap.put(openDoorLabels[0], datasetChunks);
+                        } else if (ArrayUtils.contains(openDrawerLabels, previousActivityLabel)) {
+                            if (testDrillDatasetHashMap.containsKey(openDrawerLabels[0])) {
+                                datasetChunks = testDrillDatasetHashMap.get(openDrawerLabels[0]);
+                            } else {
+                                datasetChunks = new ArrayList<>();
+                            }
+                            datasetChunks.add(chunk);
+                            testDrillDatasetHashMap.put(openDrawerLabels[0], datasetChunks);
+                        } else if (ArrayUtils.contains(closeDoorLabels, previousActivityLabel)) {
+                            if (testDrillDatasetHashMap.containsKey(closeDoorLabels[0])) {
+                                datasetChunks = testDrillDatasetHashMap.get(closeDoorLabels[0]);
+                            } else {
+                                datasetChunks = new ArrayList<>();
+                            }
+                            datasetChunks.add(chunk);
+                            testDrillDatasetHashMap.put(closeDoorLabels[0], datasetChunks);
+                        } else if (ArrayUtils.contains(closeDrawerLabels, previousActivityLabel)) {
+                            if (testDrillDatasetHashMap.containsKey(closeDrawerLabels[0])) {
+                                datasetChunks = testDrillDatasetHashMap.get(closeDrawerLabels[0]);
+                            } else {
+                                datasetChunks = new ArrayList<>();
+                            }
+                            datasetChunks.add(chunk);
+                            testDrillDatasetHashMap.put(closeDrawerLabels[0], datasetChunks);
                         } else {
-                            datasetChunks = new ArrayList<>();
+                            if (testDrillDatasetHashMap.containsKey(previousActivityLabel)) {
+                                datasetChunks = testDrillDatasetHashMap.get(previousActivityLabel);
+                            } else {
+                                datasetChunks = new ArrayList<>();
+                            }
+                            datasetChunks.add(chunk);
+                            testDrillDatasetHashMap.put(previousActivityLabel, datasetChunks);
                         }
-                        datasetChunks.add(chunk);
-                        testDrillDatasetHashMap.put(previousActivityLabel, datasetChunks);
-                        chunk = new DatasetChunk();
+                        chunk = new DatasetChunk(activityLabel);
                         previousActivityLabel = activityLabel;
                     } else {
+                        chunk.setActualLabel(activityLabel);
                         chunk.addQuaternions(quaternions);
                     }
                 }
                 readLine = bufferedReader.readLine();
             }
+            testDrillDatasetHashMap.remove(0);
             System.out.println("\nDrill dataset loaded.");
         } catch (IOException ex) {
 
         }
-        try {
+        /*try {
             String readLine;
             int demoDatasetCount = DEMO_DURATION * 1000 / SAMPLING_RATE;
             int test1DatasetCount = TEST1_DURATION * 1000 / SAMPLING_RATE;
@@ -194,7 +263,7 @@ public class DataLoader extends Thread {
             System.out.println("\nAll data loaded.");
         } catch (IOException ex) {
 
-        }
+        }*/
     }
 
     private void parseParameters(String[] args) {
@@ -232,89 +301,5 @@ public class DataLoader extends Thread {
             System.exit(-1);
         }
     }
-
-    public Quaternion[] getQuaternionData() {
-        synchronized (lock) {
-            return animationQuaternions;
-        }
-    }
-    
-    public Test1Entry getTest1Data(){
-        synchronized (lock) {
-            return test1AnimationEntry;
-        }
-    }
-
-    @Override
-    public void run() {
-        switch (Const.TEST_STATUS) {
-            case Const.DEMO:
-                runDemo();
-                break;
-            case Const.DRILL_TEST1:
-                runDrillTest1();
-                break;
-            case Const.DRILL_TEST2:
-                runDrillTest2();
-                break;
-            case Const.DRILL_TEST3:
-                runDrillTest3();
-                break;
-            case Const.ADL_TEST1:
-                runAdlTest1();
-                break;
-            case Const.ADL_TEST2:
-                runAdlTest2();
-                break;
-            case Const.ADL_TEST3:
-                runAdlTest3();
-                break;
-
-        }
-    }
-
-    private void runDemo() {
-        for (Quaternion[] quaternions : demoQuaternionsList) {
-            synchronized (lock) {
-                animationQuaternions = quaternions;
-            }
-            try {
-                Thread.sleep(SAMPLING_RATE);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(DataLoader.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        Const.DEMO_RUNNING=false;
-    }
-
-    private void runDrillTest1() {
-        for (Test1Entry testEntry : test1DrillQuaternionsList) {
-            test1AnimationEntry = testEntry;
-            try {
-                Thread.sleep(SAMPLING_RATE);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(TestLoader.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        Const.TEST1_RUNNING=false;
-    }
-
-    private void runDrillTest2() {
-    }
-
-    private void runDrillTest3() {
-    }
-
-    private void runAdlTest1() {
-    }
-
-    private void runAdlTest2() {
-    }
-
-    private void runAdlTest3() {
-    }
-
-    void setTestLoader(TestLoader testLoader) {
-        this.testLoader = testLoader;
-    }
+            
 }

@@ -15,12 +15,14 @@ import java.util.List;
  */
 public class DatasetChunk {
     
+    private int actualLabel;
     private List<Quaternion[]> subDataset;
     
-    public DatasetChunk(){
+    public DatasetChunk(int actualLabel){
         subDataset = new ArrayList<>();
+        this.actualLabel=actualLabel;
     }
-    
+        
     public void addQuaternions(Quaternion[] quaternions){
         subDataset.add(quaternions);
     }
@@ -28,5 +30,16 @@ public class DatasetChunk {
     public List<Quaternion[]> getDatasetChunk(){
         return subDataset;
     }
+
+    public int getActualLabel() {
+        return actualLabel;
+    }
+
+    public void setActualLabel(int actualLabel) {
+        this.actualLabel = actualLabel;
+    }
+
+    
+    
     
 }

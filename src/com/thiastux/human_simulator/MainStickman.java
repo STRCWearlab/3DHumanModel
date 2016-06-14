@@ -75,6 +75,8 @@ public class MainStickman extends SimpleApplication {
         chaseCam.setDefaultHorizontalRotation((float) Math.toRadians(90));
         chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30/2));
         chaseCam.setDefaultDistance(50f);
+        
+        setPauseOnLostFocus(false);
 
         createHumanModel();
         

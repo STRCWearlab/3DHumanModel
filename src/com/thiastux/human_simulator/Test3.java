@@ -12,6 +12,7 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -21,13 +22,21 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.builder.ScreenBuilder;
+import de.lessvoid.nifty.screen.DefaultScreenController;
+import de.lessvoid.nifty.screen.Screen;
+import de.lessvoid.nifty.screen.ScreenController;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
  * @author mathias
  */
-public class Test3 extends SimpleApplication {
+public class Test3 extends SimpleApplication implements ScreenController {
 
     private Stickman stickman;
     private DataLoader dataLoader;
@@ -41,6 +50,17 @@ public class Test3 extends SimpleApplication {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
+    private HashMap<Integer, List<DatasetChunk>> datasetHashMap;
+    private ArrayList<DatasetChunk> testChunks;
+    private int activeChunkIndex;
+    private DatasetChunk activeChunk;
+    private long previousTimestamp;
+    private int TEST_NUMSAMPLE = 4;
+    private int SAMPLING_FREQUENCY = 33;
+    private float elapsedTime = 0;
+    private int animationIndex = 0;
+    private NiftyJmeDisplay niftyDisplay;
+    private Nifty nifty;
 
     public Test3(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
@@ -50,8 +70,7 @@ public class Test3 extends SimpleApplication {
         this.dataLoader = dataLoader;
         this.logService = logService;
     }
-    
-    
+
     @Override
     public void simpleInitApp() {
         System.out.println("Test 3 initialization started");
@@ -68,28 +87,48 @@ public class Test3 extends SimpleApplication {
         loadTerrain();
 
         setLightAndShadow();
+        
+        initializeInterface();
 
         computeInitialQuaternions();
-        
+
+        loadDataset();
+
         setPauseOnLostFocus(false);
-        
-        
+
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        getData();
-        animateModel();
+        if (Const.TEST3_RUNNING && !Const.WAITING_TEST3_ANSWER) {
+            getData(tpf);
+            animateModel();
+        } else if (Const.WAITING_TEST3_ANSWER) {
+            presentUserLabel();
+        } else if (!Const.TEST3_RUNNING) {
+            stop();
+        }
     }
 
     @Override
     public void stop() {
-        System.out.println("Test 3 ended.");
+        logService.saveTest3Log();
         super.stop();
+        destroy();
     }
 
-    private void getData() {
-        animationQuaternions = dataLoader.getQuaternionData();
+    private void getData(float tpf) {
+        elapsedTime += tpf * 1000;
+        if (elapsedTime > SAMPLING_FREQUENCY) {
+            animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
+            try {
+                animationQuaternions = activeChunk.getDatasetChunk().get(animationIndex);
+                elapsedTime = 0;
+            } catch (IndexOutOfBoundsException e) {
+                animationIndex = 0;
+                Const.WAITING_TEST3_ANSWER = true;
+            }
+        }
     }
 
     private void animateModel() {
@@ -267,5 +306,55 @@ public class Test3 extends SimpleApplication {
             previousQuaternions[i] = new Quaternion();
         }
 
+    }
+
+    private void initializeInterface() {
+        niftyDisplay = new NiftyJmeDisplay(assetManager,
+                inputManager,
+                audioRenderer,
+                viewPort);
+
+        nifty = niftyDisplay.getNifty();
+        nifty.fromXml("Interface/Test3/test3Interface.xml", "controls", this);
+    }
+
+    private void loadDataset() {
+        datasetHashMap = dataLoader.getDrillTestHashMap();
+        testChunks = new ArrayList<>();
+        for (Integer key : datasetHashMap.keySet()) {
+            List<DatasetChunk> chunks = datasetHashMap.get(key);
+            Collections.shuffle(chunks);
+            testChunks.addAll(chunks.subList(0, TEST_NUMSAMPLE));
+        }
+        Collections.shuffle(testChunks);
+        activeChunk = testChunks.get(activeChunkIndex);
+    }
+
+    private void presentUserLabel() {
+        if(guiViewPort.getProcessors().isEmpty())
+            guiViewPort.addProcessor(niftyDisplay);
+    }
+
+    public void saveTest3Event(String id) {
+        logService.addTest3Event("{userLabel:"+id+", actualLabel: "+activeChunk.getActualLabel()+"},");
+        try {
+            activeChunk = testChunks.get(++activeChunkIndex);
+        } catch (IndexOutOfBoundsException exception) {
+            Const.TEST3_RUNNING = false;
+        }
+        Const.WAITING_TEST3_ANSWER = false;
+        guiViewPort.removeProcessor(niftyDisplay);
+    }
+
+    @Override
+    public void bind(Nifty nifty, Screen screen) {
+    }
+
+    @Override
+    public void onStartScreen() {
+    }
+
+    @Override
+    public void onEndScreen() {
     }
 }
