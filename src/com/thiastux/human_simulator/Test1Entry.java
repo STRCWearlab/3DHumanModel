@@ -42,6 +42,5 @@ class Test1Entry {
     public String toString() {
         return "{" + "timestamp: " + timestamp + ", activityLabel: " + activityLabel + '}';
     }
-    
-    
+   
 }

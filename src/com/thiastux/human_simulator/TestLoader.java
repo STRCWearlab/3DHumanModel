@@ -47,11 +47,11 @@ public class TestLoader {
     }
 
     private void start() {
-        startTests();
+        //startTests();
         //startDemo();
-        //startDrillTest1();
+        startDrillTest1();
         //startDrillTest2();
-        startDrillTest3();
+        //startDrillTest3();
     }
 
     private void initializeAppSettings() {

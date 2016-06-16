@@ -28,67 +28,72 @@ import java.util.HashMap;
  * @author mathias
  */
 public class MainStickman extends SimpleApplication {
-    
-    private static boolean DEBUG=false;
+
+    private static boolean DEBUG = false;
 
     public static void main(String[] args) {
-        
+
         MainStickman app;
-        
-        if(DEBUG){
+
+        if (DEBUG) {
             app = new MainStickman();
-        }
-        else{
+        } else {
             app = new MainStickman(args);
         }
         app.start();
     }
-    
+
     private TCPDataClient tcpDataClient;
     private Quaternion[] animationQuaternions;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
     private Stickman stickman;
     private Geometry terrainGeometry;
-    
+
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private Quaternion[] previousQuaternions = new Quaternion[12];
     private Quaternion preRot;
     private Quaternion qAlignArmR;
     private Quaternion qAlignArmL;
-    
-    public MainStickman(){
+
+    public MainStickman() {
         super();
     }
 
     public MainStickman(String[] args) {
         tcpDataClient = new TCPDataClient(this, args);
     }
-    
+
     @Override
     public void simpleInitApp() {
         System.out.println("Application initialization started");
+
         addReferenceSystem();
 
         flyCam.setEnabled(false);
         ChaseCamera chaseCam = new ChaseCamera(cam, rootNode, inputManager);
         chaseCam.setDefaultHorizontalRotation((float) Math.toRadians(90));
-        chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30/2));
-        chaseCam.setDefaultDistance(50f);
-        
+        chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30 / 2));
+        chaseCam.setDefaultDistance(40f);
+
+        setDisplayFps(false);
+
+        setDisplayStatView(false);
+
         setPauseOnLostFocus(false);
 
         createHumanModel();
-        
+
         loadTerrain();
-        
+
         setLightAndShadow();
-        
+
         computeInitialQuaternions();
-        
-        if(!DEBUG)
+
+        if (!DEBUG) {
             tcpDataClient.startExecution();
-        
+        }
+
     }
 
     @Override
@@ -98,14 +103,15 @@ public class MainStickman extends SimpleApplication {
             getData();
             animateModel();
         } else {
-            stickman.animateBone(0, 0, true);
+            //stickman.animateBone(0, 0, true);
         }
     }
 
     @Override
     public void stop() {
-        if(!DEBUG)
+        if (!DEBUG) {
             tcpDataClient.stopExecution();
+        }
         System.out.println("\nApplication ended");
         super.stop();
     }
@@ -115,25 +121,26 @@ public class MainStickman extends SimpleApplication {
     }
 
     private void animateModel() {
-        for(int i=0;i<12;i++){
+        for (int i = 0; i < 12; i++) {
             Quaternion rotQuat = preProcessingQuaternion(i);
-            if(rotQuat!=null)
+            if (rotQuat != null) {
                 stickman.updateModelBonePosition(rotQuat, i);
+            }
         }
-        if(!Const.useLegs)
+        if (!Const.useLegs) {
             stickman.rotateLegs(previousQuaternions[0]);
+        }
     }
-    
+
     private Quaternion preProcessingQuaternion(int i) {
-        
+
         if (animationQuaternions[i] == null) {
             return null;
         }
 
-        
         //Normalize quaternion to adjust lost of precision using mG.
         Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
-        
+
         if (i == 2 || i == 3 || i == 4) {
             //if (i == 2) {
             //outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
@@ -157,11 +164,11 @@ public class MainStickman extends SimpleApplication {
 
         return outputQuat;
     }
-    
+
     private Quaternion conjugate(Quaternion quaternion) {
         return new Quaternion(-quaternion.getX(), -quaternion.getY(), -quaternion.getZ(), quaternion.getW());
     }
-    
+
     private Quaternion getPrevLimbQuaternion(int i) {
         switch (i) {
             case 1:
@@ -212,7 +219,7 @@ public class MainStickman extends SimpleApplication {
         refNode.attachChild(yAxisGeometry);
         refNode.attachChild(zAxisGeometry);
 
-        refNode.setLocalTranslation(-7, 0, 0);
+        refNode.setLocalTranslation(-10, 0, 0);
 
         rootNode.attachChild(refNode);
     }
@@ -225,16 +232,16 @@ public class MainStickman extends SimpleApplication {
         Quad terrainMesh = new Quad(TERRAIN_WIDTH, TERRAIN_HEIGHT);
         terrainGeometry = new Geometry("Terrain", terrainMesh);
         terrainGeometry.setLocalRotation(new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f));
-        terrainGeometry.setLocalTranslation(-TERRAIN_WIDTH/2, -(stickman.TORSO_HEIGHT/2+stickman.ULEG_LENGTH+stickman.LLEG_LENGTH), TERRAIN_HEIGHT/2);
+        terrainGeometry.setLocalTranslation(-TERRAIN_WIDTH / 2, -(stickman.TORSO_HEIGHT / 2 + stickman.ULEG_LENGTH + stickman.LLEG_LENGTH), TERRAIN_HEIGHT / 2);
         Material terrainMaterial = new Material(assetManager,
                 "Common/MatDefs/Light/Lighting.j3md");
         terrainMaterial.setBoolean("UseMaterialColors", true);
         terrainMaterial.setColor("Ambient", ColorRGBA.White);
         terrainMaterial.setColor("Diffuse", ColorRGBA.White);
         terrainGeometry.setMaterial(terrainMaterial);
-        
+
         terrainGeometry.setShadowMode(ShadowMode.Receive);
-        
+
         rootNode.attachChild(terrainGeometry);
     }
 
@@ -244,18 +251,18 @@ public class MainStickman extends SimpleApplication {
         sun.setColor(ColorRGBA.White);
         sun.setDirection(new Vector3f(-.5f, -.5f, -.5f).normalizeLocal());
         rootNode.addLight(sun);
-        
+
         DirectionalLight sun2 = new DirectionalLight();
         sun2.setColor(ColorRGBA.White);
         sun2.setDirection(new Vector3f(.5f, .5f, .5f).normalizeLocal());
         rootNode.addLight(sun2);
-        
+
         rootNode.setShadowMode(ShadowMode.Off);
-        
+
         stickman.setShadowMode(ShadowMode.CastAndReceive);
         terrainGeometry.setShadowMode(ShadowMode.Receive);
-        
-        final int SHADOWMAP_SIZE=512;
+
+        final int SHADOWMAP_SIZE = 512;
         DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, SHADOWMAP_SIZE, 3);
         dlsr.setLight(sun);
         viewPort.addProcessor(dlsr);
@@ -266,9 +273,9 @@ public class MainStickman extends SimpleApplication {
         FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
         fpp.addFilter(dlsf);
         viewPort.addProcessor(fpp);
-        
+
     }
-    
+
     private void computeInitialQuaternions() {
         // Compose two rotations:
         // First, rotate the rendered model to face inside the screen (negative z)
@@ -287,9 +294,10 @@ public class MainStickman extends SimpleApplication {
         qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
         print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
         System.out.println(print + "    ");
-        
-        for(int i=0;i<12;i++)
+
+        for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
+        }
 
     }
 
