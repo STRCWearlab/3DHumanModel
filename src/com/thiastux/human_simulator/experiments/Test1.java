@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.experiments;
 
 import com.jme3.app.LegacyApplication;
 import com.jme3.app.SimpleApplication;
@@ -25,6 +25,8 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
+import com.thiastux.human_simulator.model.Const;
+import com.thiastux.human_simulator.model.Stickman;
 import java.util.HashMap;
 import java.util.List;
 

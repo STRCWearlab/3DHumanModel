@@ -3,12 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.experiments;
 
 import com.jme3.math.Quaternion;
 import com.sun.javafx.scene.control.skin.VirtualFlow;
 import com.sun.org.apache.xalan.internal.xsltc.compiler.NodeTest;
 import com.sun.org.apache.xpath.internal.functions.WrongNumberArgsException;
+import com.thiastux.human_simulator.model.Const;
+import com.thiastux.human_simulator.Main;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -51,13 +53,13 @@ public class DataLoader {
     private int[] openDoorLabels = {
         406516, 406517
     };
+    
+    private int[] closeDoorLabels = {
+        404516, 404517
+    };
 
     private int[] openDrawerLabels = {
         406519, 406511, 406508
-    };
-
-    private int[] closeDoorLabels = {
-        404516, 404517
     };
 
     private int[] closeDrawerLabels = {

@@ -5,6 +5,8 @@
  */
 package com.thiastux.human_simulator;
 
+import com.thiastux.human_simulator.model.Stickman;
+import com.thiastux.human_simulator.model.Const;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
 import com.jme3.light.DirectionalLight;

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.experiments;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
@@ -12,6 +12,7 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -21,6 +22,12 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
+import com.thiastux.human_simulator.model.Const;
+import com.thiastux.human_simulator.model.Stickman;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.controls.TextField;
+import de.lessvoid.nifty.screen.Screen;
+import de.lessvoid.nifty.screen.ScreenController;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +37,11 @@ import java.util.List;
  *
  * @author mathias
  */
-public class Demo extends SimpleApplication {
+public class Test2 extends SimpleApplication implements ScreenController {
 
     private Stickman stickman;
     private DataLoader dataLoader;
+    private LogService logService;
     private Quaternion[] animationQuaternions = new Quaternion[12];
     private Geometry terrainGeometry;
     private Quaternion[] previousQuaternions = new Quaternion[12];
@@ -43,18 +51,33 @@ public class Demo extends SimpleApplication {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
-    private List<Quaternion[]> demoQuaternionList;
-    private int elapsedTime = 0;
-    private int SAMPLING_FREQUENCY=33;
-    private int animationIndex = 0;
+    private Nifty nifty;
+    private NiftyJmeDisplay niftyDisplay;
+    private Object lock;
+    private HashMap<Integer, List<DatasetChunk>> datasetHashMap;
+    private int TEST_NUMSAMPLE = 4;
+    private List<DatasetChunk> testChunks;
+    private DatasetChunk activeChunk;
+    private int activeChunkIndex;
+    private long currentTimestamp;
+    private long previousTimestamp;
+    private float elapsedTime = 0;
+    private int SAMPLING_FREQUENCY = 33;
+    private int animationIndex=0;
 
-    public Demo(DataLoader dataLoader) {
+    public Test2(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
+    }
+
+    public Test2(DataLoader dataLoader, LogService logService, Object lock) {
+        this.dataLoader = dataLoader;
+        this.logService = logService;
+        this.lock = lock;
     }
 
     @Override
     public void simpleInitApp() {
-        System.out.println("Demo initialization started");
+        System.out.println("Test 2 initialization started");
         addReferenceSystem();
 
         flyCam.setEnabled(false);
@@ -69,25 +92,31 @@ public class Demo extends SimpleApplication {
 
         setLightAndShadow();
 
+        initializeInterface();
+
         computeInitialQuaternions();
-        
+
         loadDataset();
 
         setPauseOnLostFocus(false);
+
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        if (Const.DEMO_RUNNING) {
+        if (Const.TEST2_RUNNING && !Const.WAITING_TEST2_ANSWER) {
             getData(tpf);
             animateModel();
-        } else {
+        } else if (Const.WAITING_TEST2_ANSWER) {
+            askUserLabel();
+        } else if (!Const.TEST2_RUNNING) {
             stop();
         }
     }
 
     @Override
     public void stop() {
+        logService.saveTest2Log();
         super.stop();
         destroy();
     }
@@ -97,26 +126,24 @@ public class Demo extends SimpleApplication {
         if (elapsedTime > SAMPLING_FREQUENCY) {
             animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
             try {
-                animationQuaternions = demoQuaternionList.get(animationIndex);
+                animationQuaternions = activeChunk.getDatasetChunk().get(animationIndex);
                 elapsedTime = 0;
             } catch (IndexOutOfBoundsException e) {
-                Const.DEMO_RUNNING=false;
-                stop();
+                animationIndex=0;
+                Const.WAITING_TEST2_ANSWER = true;
             }
         }
     }
 
     private void animateModel() {
-        if (animationQuaternions != null) {
-            for (int i = 0; i < 12; i++) {
-                Quaternion rotQuat = preProcessingQuaternion(i);
-                if (rotQuat != null) {
-                    stickman.updateModelBonePosition(rotQuat, i);
-                }
+        for (int i = 0; i < 12; i++) {
+            Quaternion rotQuat = preProcessingQuaternion(i);
+            if (rotQuat != null) {
+                stickman.updateModelBonePosition(rotQuat, i);
             }
-            if (!Const.useLegs) {
-                stickman.rotateLegs(previousQuaternions[0]);
-            }
+        }
+        if (!Const.useLegs) {
+            stickman.rotateLegs(previousQuaternions[0]);
         }
     }
 
@@ -267,15 +294,79 @@ public class Demo extends SimpleApplication {
         Quaternion quat1 = new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f);
         Quaternion quat2 = new Quaternion().fromAngles(0f, (float) Math.toRadians(180), 0f);
         preRot = quat1.mult(quat2);
+
+        String print = String.format("qPreRot: %.1f %.1f %.1f %.1f", preRot.getW(), preRot.getX(), preRot.getY(), preRot.getZ());
+        System.out.println(print + "    ");
+
         qAlignArmR = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
+        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qAlignArmR.getW(), qAlignArmR.getX(), qAlignArmR.getY(), qAlignArmR.getZ());
+        System.out.println(print + "    ");
+
         qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
-        
+        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
+        System.out.println(print + "    ");
+
         for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
         }
+
     }
-    
+
     private void loadDataset() {
-        demoQuaternionList = dataLoader.getDemoData();
+        datasetHashMap = dataLoader.getDrillTestHashMap();
+        testChunks = new ArrayList<>();
+        for (Integer key : datasetHashMap.keySet()) {
+            List<DatasetChunk> chunks = datasetHashMap.get(key);
+            Collections.shuffle(chunks);
+            testChunks.addAll(chunks.subList(0, TEST_NUMSAMPLE));
+        }
+        Collections.shuffle(testChunks);
+        activeChunk = testChunks.get(activeChunkIndex);
+        previousTimestamp = System.currentTimeMillis();
     }
+
+    private void initializeInterface() {
+        niftyDisplay = new NiftyJmeDisplay(assetManager,
+                inputManager,
+                audioRenderer,
+                viewPort);
+
+        nifty = niftyDisplay.getNifty();
+        nifty.fromXml("Interface/Test2/test2Interface.xml", "controls", this);
+    }
+
+    public void saveTest2Event() {
+        TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
+        String userLabel = userLabelTextField.getDisplayedText();
+        logService.addTest2Event("{userLabel:"+userLabel+", actualLabel: "+activeChunk.getActualLabel()+"},");
+        //System.out.println(userLabel);
+        try {
+            activeChunk = testChunks.get(++activeChunkIndex);
+        } catch (IndexOutOfBoundsException exception) {
+            Const.TEST2_RUNNING = false;
+        }
+        Const.WAITING_TEST2_ANSWER = false;
+        guiViewPort.removeProcessor(niftyDisplay);
+    }
+
+    @Override
+    public void bind(Nifty nifty, Screen screen) {
+    }
+
+    @Override
+    public void onStartScreen() {
+    }
+
+    @Override
+    public void onEndScreen() {
+    }
+
+    private void askUserLabel() {
+        if (guiViewPort.getProcessors().isEmpty()) {
+            guiViewPort.addProcessor(niftyDisplay);
+            TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
+            userLabelTextField.setText("");
+        }
+    }
+
 }

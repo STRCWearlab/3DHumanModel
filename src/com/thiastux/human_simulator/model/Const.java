@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.model;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -25,7 +25,7 @@ public class Const {
     private static String[] priorQuatCommand
             = {"-ptor", "-phea", "-prua", "-prla", "-prha", "-plua", "-plla", "-plha", "-prul", "-prll", "-plul", "-plll"};
     
-    static int TEST_STATUS;
+    public static int TEST_STATUS;
     public static final int DEMO=1000;
     public static final int DRILL_TEST1=1001;
     public static final int DRILL_TEST2=1002;

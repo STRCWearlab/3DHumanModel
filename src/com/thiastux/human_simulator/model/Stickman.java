@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.model;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
@@ -30,24 +30,24 @@ public class Stickman {
         return TORSO_HEIGHT + 2 * HEAD_RADIUS + ULEG_LENGTH + LLEG_LENGTH;
     }
 
-    protected final float TORSO_HEIGHT = 4f;
-    protected final float TORSO_RADIUS = 1.5f;
-    protected final float PELVIS_HEIGHT = 2f;
-    protected final float PELVIS_RADIUS = 1.0f;
-    protected final float HIP_WIDTH = 2f;
-    protected final float ULEG_LENGTH = 4f;
-    protected final float LLEG_LENGTH = 3f;
-    protected final float ULEG_RADIUS = 0.5f;
-    protected final float LLEG_RADIUS = 0.4f;
-    protected final float UARM_LENGTH = 3f;
-    protected final float LARM_LENGTH = 3f;
-    protected final float UARM_RADIUS = 0.4f;
-    protected final float LARM_RADIUS = 0.35f;
-    protected final float SHOULDER_RADIUS = 6.5f;
-    protected final float HEAD_RADIUS = 1f;
-    protected final float EYE_RADIUS = 0.08f;
-    protected final float PUPIL_RADIUS = 0.2f;
-    protected final float SHOULDER_WIDTH = TORSO_RADIUS + UARM_RADIUS;
+    public final float TORSO_HEIGHT = 4f;
+    public final float TORSO_RADIUS = 1.5f;
+    public final float PELVIS_HEIGHT = 2f;
+    public final float PELVIS_RADIUS = 1.0f;
+    public final float HIP_WIDTH = 2f;
+    public final float ULEG_LENGTH = 4f;
+    public final float LLEG_LENGTH = 3f;
+    public final float ULEG_RADIUS = 0.5f;
+    public final float LLEG_RADIUS = 0.4f;
+    public final float UARM_LENGTH = 3f;
+    public final float LARM_LENGTH = 3f;
+    public final float UARM_RADIUS = 0.4f;
+    public final float LARM_RADIUS = 0.35f;
+    public final float SHOULDER_RADIUS = 6.5f;
+    public final float HEAD_RADIUS = 1f;
+    public final float EYE_RADIUS = 0.08f;
+    public final float PUPIL_RADIUS = 0.2f;
+    public final float SHOULDER_WIDTH = TORSO_RADIUS + UARM_RADIUS;
 
     private HashMap<Integer, Spatial> skeletonMap;
     private Spatial pelvisBone;
@@ -377,24 +377,24 @@ public class Stickman {
         
     }
 
-    protected void updateModelBonePosition(Quaternion animationQuaternion, int boneIndex) {
+    public void updateModelBonePosition(Quaternion animationQuaternion, int boneIndex) {
         Spatial bone = skeletonMap.get(boneIndex);
         bone.setLocalRotation(animationQuaternion);
     }
     
-    protected void rotateLegs(Quaternion torsoQuaternion){
+    public void rotateLegs(Quaternion torsoQuaternion){
         Vector3f torsoVector3f = torsoQuaternion.getRotationColumn(2).normalizeLocal();
         Quaternion pelvisQuaternion = new Quaternion().fromAngles(0, -torsoVector3f.angleBetween(Vector3f.UNIT_Z), 0);
         pelvisBone.setLocalRotation(pelvisQuaternion.normalizeLocal());
     }
 
-    void setShadowMode(RenderQueue.ShadowMode shadowMode) {
+    public void setShadowMode(RenderQueue.ShadowMode shadowMode) {
         for (Spatial bone : skeletonMap.values()) {
             bone.setShadowMode(shadowMode);
         }
     }
 
-    void animateBone(int boneIndex, int axisIndex, boolean counterClockWise) {
+    public void animateBone(int boneIndex, int axisIndex, boolean counterClockWise) {
         if (counterClockWise) {
             animationIndex++;
         } else {
@@ -415,7 +415,7 @@ public class Stickman {
         skeletonMap.get(boneIndex).setLocalRotation(rot);
     }
 
-    void rotateBone(int boneIndex, int axisIndex, double degrees) {
+    public void rotateBone(int boneIndex, int axisIndex, double degrees) {
         Quaternion rot = new Quaternion();
         switch (axisIndex) {
             case 0:

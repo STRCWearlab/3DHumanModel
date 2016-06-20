@@ -1,5 +1,6 @@
 package com.thiastux.human_simulator;
 
+import com.thiastux.human_simulator.model.Const;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.Bone;
 import com.jme3.animation.Skeleton;

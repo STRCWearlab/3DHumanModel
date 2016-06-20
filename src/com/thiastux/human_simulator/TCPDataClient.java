@@ -5,6 +5,7 @@
  */
 package com.thiastux.human_simulator;
 
+import com.thiastux.human_simulator.model.Const;
 import com.jme3.math.Quaternion;
 import com.sun.org.apache.xpath.internal.functions.WrongNumberArgsException;
 import java.io.BufferedReader;

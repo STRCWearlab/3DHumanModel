@@ -29,13 +29,13 @@
                          visibleToMouse="true" >
                     <interact onClick="saveTest3Event(404505)"/>
                 </control>
-                <control name="button" label="Open Drawer" id="406515" align="center" valign="center"
+                <control name="button" label="Open Drawer" id="406519" align="center" valign="center"
                          visibleToMouse="true" >
-                    <interact onClick="saveTest3Event(406515)"/>
+                    <interact onClick="saveTest3Event(406519)"/>
                 </control>
-                <control name="button" label="Close Drawer" id="404515" align="center" valign="center"
+                <control name="button" label="Close Drawer" id="404519" align="center" valign="center"
                          visibleToMouse="true" >
-                    <interact onClick="saveTest3Event(404515)"/>
+                    <interact onClick="saveTest3Event(404519)"/>
                 </control>
                 <control name="button" label="Clean Table" id="408512" align="center" valign="center"
                          visibleToMouse="true" >

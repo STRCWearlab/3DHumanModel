@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.experiments;
 
+import com.thiastux.human_simulator.experiments.DataLoader;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
 import com.jme3.light.DirectionalLight;
@@ -12,7 +13,6 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
-import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
@@ -22,11 +22,8 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
-import de.lessvoid.nifty.Nifty;
-import de.lessvoid.nifty.builder.ScreenBuilder;
-import de.lessvoid.nifty.screen.DefaultScreenController;
-import de.lessvoid.nifty.screen.Screen;
-import de.lessvoid.nifty.screen.ScreenController;
+import com.thiastux.human_simulator.model.Const;
+import com.thiastux.human_simulator.model.Stickman;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,11 +33,10 @@ import java.util.List;
  *
  * @author mathias
  */
-public class Test3 extends SimpleApplication implements ScreenController {
+public class Demo extends SimpleApplication {
 
     private Stickman stickman;
     private DataLoader dataLoader;
-    private LogService logService;
     private Quaternion[] animationQuaternions = new Quaternion[12];
     private Geometry terrainGeometry;
     private Quaternion[] previousQuaternions = new Quaternion[12];
@@ -50,30 +46,18 @@ public class Test3 extends SimpleApplication implements ScreenController {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
-    private HashMap<Integer, List<DatasetChunk>> datasetHashMap;
-    private ArrayList<DatasetChunk> testChunks;
-    private int activeChunkIndex;
-    private DatasetChunk activeChunk;
-    private long previousTimestamp;
-    private int TEST_NUMSAMPLE = 4;
-    private int SAMPLING_FREQUENCY = 33;
-    private float elapsedTime = 0;
+    private List<Quaternion[]> demoQuaternionList;
+    private int elapsedTime = 0;
+    private int SAMPLING_FREQUENCY=33;
     private int animationIndex = 0;
-    private NiftyJmeDisplay niftyDisplay;
-    private Nifty nifty;
 
-    public Test3(DataLoader dataLoader) {
+    public Demo(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
-    }
-
-    public Test3(DataLoader dataLoader, LogService logService) {
-        this.dataLoader = dataLoader;
-        this.logService = logService;
     }
 
     @Override
     public void simpleInitApp() {
-        System.out.println("Test 3 initialization started");
+        System.out.println("Demo initialization started");
         addReferenceSystem();
 
         flyCam.setEnabled(false);
@@ -87,32 +71,26 @@ public class Test3 extends SimpleApplication implements ScreenController {
         loadTerrain();
 
         setLightAndShadow();
-        
-        initializeInterface();
 
         computeInitialQuaternions();
-
+        
         loadDataset();
 
         setPauseOnLostFocus(false);
-
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        if (Const.TEST3_RUNNING && !Const.WAITING_TEST3_ANSWER) {
+        if (Const.DEMO_RUNNING) {
             getData(tpf);
             animateModel();
-        } else if (Const.WAITING_TEST3_ANSWER) {
-            presentUserLabel();
-        } else if (!Const.TEST3_RUNNING) {
+        } else {
             stop();
         }
     }
 
     @Override
     public void stop() {
-        logService.saveTest3Log();
         super.stop();
         destroy();
     }
@@ -122,24 +100,26 @@ public class Test3 extends SimpleApplication implements ScreenController {
         if (elapsedTime > SAMPLING_FREQUENCY) {
             animationIndex += (int) elapsedTime / SAMPLING_FREQUENCY;
             try {
-                animationQuaternions = activeChunk.getDatasetChunk().get(animationIndex);
+                animationQuaternions = demoQuaternionList.get(animationIndex);
                 elapsedTime = 0;
             } catch (IndexOutOfBoundsException e) {
-                animationIndex = 0;
-                Const.WAITING_TEST3_ANSWER = true;
+                Const.DEMO_RUNNING=false;
+                stop();
             }
         }
     }
 
     private void animateModel() {
-        for (int i = 0; i < 12; i++) {
-            Quaternion rotQuat = preProcessingQuaternion(i);
-            if (rotQuat != null) {
-                stickman.updateModelBonePosition(rotQuat, i);
+        if (animationQuaternions != null) {
+            for (int i = 0; i < 12; i++) {
+                Quaternion rotQuat = preProcessingQuaternion(i);
+                if (rotQuat != null) {
+                    stickman.updateModelBonePosition(rotQuat, i);
+                }
             }
-        }
-        if (!Const.useLegs) {
-            stickman.rotateLegs(previousQuaternions[0]);
+            if (!Const.useLegs) {
+                stickman.rotateLegs(previousQuaternions[0]);
+            }
         }
     }
 
@@ -290,64 +270,15 @@ public class Test3 extends SimpleApplication implements ScreenController {
         Quaternion quat1 = new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f);
         Quaternion quat2 = new Quaternion().fromAngles(0f, (float) Math.toRadians(180), 0f);
         preRot = quat1.mult(quat2);
-
-
         qAlignArmR = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
         qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
-
+        
         for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
         }
-
     }
-
-    private void initializeInterface() {
-        niftyDisplay = new NiftyJmeDisplay(assetManager,
-                inputManager,
-                audioRenderer,
-                viewPort);
-
-        nifty = niftyDisplay.getNifty();
-        nifty.fromXml("Interface/Test3/test3Interface.xml", "controls", this);
-    }
-
+    
     private void loadDataset() {
-        datasetHashMap = dataLoader.getDrillTestHashMap();
-        testChunks = new ArrayList<>();
-        for (Integer key : datasetHashMap.keySet()) {
-            List<DatasetChunk> chunks = datasetHashMap.get(key);
-            Collections.shuffle(chunks);
-            testChunks.addAll(chunks.subList(0, TEST_NUMSAMPLE));
-        }
-        Collections.shuffle(testChunks);
-        activeChunk = testChunks.get(activeChunkIndex);
-    }
-
-    private void presentUserLabel() {
-        if(guiViewPort.getProcessors().isEmpty())
-            guiViewPort.addProcessor(niftyDisplay);
-    }
-
-    public void saveTest3Event(String id) {
-        logService.addTest3Event("{userLabel:"+id+", actualLabel: "+activeChunk.getActualLabel()+"},");
-        try {
-            activeChunk = testChunks.get(++activeChunkIndex);
-        } catch (IndexOutOfBoundsException exception) {
-            Const.TEST3_RUNNING = false;
-        }
-        Const.WAITING_TEST3_ANSWER = false;
-        guiViewPort.removeProcessor(niftyDisplay);
-    }
-
-    @Override
-    public void bind(Nifty nifty, Screen screen) {
-    }
-
-    @Override
-    public void onStartScreen() {
-    }
-
-    @Override
-    public void onEndScreen() {
+        demoQuaternionList = dataLoader.getDemoData();
     }
 }

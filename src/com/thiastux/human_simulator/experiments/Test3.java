@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.experiments;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
@@ -22,8 +22,11 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shadow.DirectionalLightShadowFilter;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
+import com.thiastux.human_simulator.model.Const;
+import com.thiastux.human_simulator.model.Stickman;
 import de.lessvoid.nifty.Nifty;
-import de.lessvoid.nifty.controls.TextField;
+import de.lessvoid.nifty.builder.ScreenBuilder;
+import de.lessvoid.nifty.screen.DefaultScreenController;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 import java.util.ArrayList;
@@ -35,7 +38,7 @@ import java.util.List;
  *
  * @author mathias
  */
-public class Test2 extends SimpleApplication implements ScreenController {
+public class Test3 extends SimpleApplication implements ScreenController {
 
     private Stickman stickman;
     private DataLoader dataLoader;
@@ -49,33 +52,30 @@ public class Test2 extends SimpleApplication implements ScreenController {
     private final float TERRAIN_WIDTH = 50f;
     private final float TERRAIN_HEIGHT = 50f;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
-    private Nifty nifty;
-    private NiftyJmeDisplay niftyDisplay;
-    private Object lock;
     private HashMap<Integer, List<DatasetChunk>> datasetHashMap;
-    private int TEST_NUMSAMPLE = 4;
-    private List<DatasetChunk> testChunks;
-    private DatasetChunk activeChunk;
+    private ArrayList<DatasetChunk> testChunks;
     private int activeChunkIndex;
-    private long currentTimestamp;
+    private DatasetChunk activeChunk;
     private long previousTimestamp;
-    private float elapsedTime = 0;
+    private int TEST_NUMSAMPLE = 4;
     private int SAMPLING_FREQUENCY = 33;
-    private int animationIndex=0;
+    private float elapsedTime = 0;
+    private int animationIndex = 0;
+    private NiftyJmeDisplay niftyDisplay;
+    private Nifty nifty;
 
-    public Test2(DataLoader dataLoader) {
+    public Test3(DataLoader dataLoader) {
         this.dataLoader = dataLoader;
     }
 
-    public Test2(DataLoader dataLoader, LogService logService, Object lock) {
+    public Test3(DataLoader dataLoader, LogService logService) {
         this.dataLoader = dataLoader;
         this.logService = logService;
-        this.lock = lock;
     }
 
     @Override
     public void simpleInitApp() {
-        System.out.println("Test 2 initialization started");
+        System.out.println("Test 3 initialization started");
         addReferenceSystem();
 
         flyCam.setEnabled(false);
@@ -89,7 +89,7 @@ public class Test2 extends SimpleApplication implements ScreenController {
         loadTerrain();
 
         setLightAndShadow();
-
+        
         initializeInterface();
 
         computeInitialQuaternions();
@@ -102,19 +102,19 @@ public class Test2 extends SimpleApplication implements ScreenController {
 
     @Override
     public void simpleUpdate(float tpf) {
-        if (Const.TEST2_RUNNING && !Const.WAITING_TEST2_ANSWER) {
+        if (Const.TEST3_RUNNING && !Const.WAITING_TEST3_ANSWER) {
             getData(tpf);
             animateModel();
-        } else if (Const.WAITING_TEST2_ANSWER) {
-            askUserLabel();
-        } else if (!Const.TEST2_RUNNING) {
+        } else if (Const.WAITING_TEST3_ANSWER) {
+            presentUserLabel();
+        } else if (!Const.TEST3_RUNNING) {
             stop();
         }
     }
 
     @Override
     public void stop() {
-        logService.saveTest2Log();
+        logService.saveTest3Log();
         super.stop();
         destroy();
     }
@@ -127,8 +127,8 @@ public class Test2 extends SimpleApplication implements ScreenController {
                 animationQuaternions = activeChunk.getDatasetChunk().get(animationIndex);
                 elapsedTime = 0;
             } catch (IndexOutOfBoundsException e) {
-                animationIndex=0;
-                Const.WAITING_TEST2_ANSWER = true;
+                animationIndex = 0;
+                Const.WAITING_TEST3_ANSWER = true;
             }
         }
     }
@@ -293,21 +293,24 @@ public class Test2 extends SimpleApplication implements ScreenController {
         Quaternion quat2 = new Quaternion().fromAngles(0f, (float) Math.toRadians(180), 0f);
         preRot = quat1.mult(quat2);
 
-        String print = String.format("qPreRot: %.1f %.1f %.1f %.1f", preRot.getW(), preRot.getX(), preRot.getY(), preRot.getZ());
-        System.out.println(print + "    ");
 
         qAlignArmR = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
-        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qAlignArmR.getW(), qAlignArmR.getX(), qAlignArmR.getY(), qAlignArmR.getZ());
-        System.out.println(print + "    ");
-
         qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
-        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
-        System.out.println(print + "    ");
 
         for (int i = 0; i < 12; i++) {
             previousQuaternions[i] = new Quaternion();
         }
 
+    }
+
+    private void initializeInterface() {
+        niftyDisplay = new NiftyJmeDisplay(assetManager,
+                inputManager,
+                audioRenderer,
+                viewPort);
+
+        nifty = niftyDisplay.getNifty();
+        nifty.fromXml("Interface/Test3/test3Interface.xml", "controls", this);
     }
 
     private void loadDataset() {
@@ -320,30 +323,21 @@ public class Test2 extends SimpleApplication implements ScreenController {
         }
         Collections.shuffle(testChunks);
         activeChunk = testChunks.get(activeChunkIndex);
-        previousTimestamp = System.currentTimeMillis();
     }
 
-    private void initializeInterface() {
-        niftyDisplay = new NiftyJmeDisplay(assetManager,
-                inputManager,
-                audioRenderer,
-                viewPort);
-
-        nifty = niftyDisplay.getNifty();
-        nifty.fromXml("Interface/Test2/test2Interface.xml", "controls", this);
+    private void presentUserLabel() {
+        if(guiViewPort.getProcessors().isEmpty())
+            guiViewPort.addProcessor(niftyDisplay);
     }
 
-    public void saveTest2Event() {
-        TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
-        String userLabel = userLabelTextField.getDisplayedText();
-        logService.addTest2Event("{userLabel:"+userLabel+", actualLabel: "+activeChunk.getActualLabel()+"},");
-        //System.out.println(userLabel);
+    public void saveTest3Event(String id) {
+        logService.addTest3Event("{userLabel:"+id+", actualLabel: "+activeChunk.getActualLabel()+"},");
         try {
             activeChunk = testChunks.get(++activeChunkIndex);
         } catch (IndexOutOfBoundsException exception) {
-            Const.TEST2_RUNNING = false;
+            Const.TEST3_RUNNING = false;
         }
-        Const.WAITING_TEST2_ANSWER = false;
+        Const.WAITING_TEST3_ANSWER = false;
         guiViewPort.removeProcessor(niftyDisplay);
     }
 
@@ -358,13 +352,4 @@ public class Test2 extends SimpleApplication implements ScreenController {
     @Override
     public void onEndScreen() {
     }
-
-    private void askUserLabel() {
-        if (guiViewPort.getProcessors().isEmpty()) {
-            guiViewPort.addProcessor(niftyDisplay);
-            TextField userLabelTextField = nifty.getCurrentScreen().findNiftyControl("userLabel", TextField.class);
-            userLabelTextField.setText("");
-        }
-    }
-
 }
