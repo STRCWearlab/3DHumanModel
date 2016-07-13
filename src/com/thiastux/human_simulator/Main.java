@@ -40,13 +40,6 @@ public class Main extends SimpleApplication {
         "LeftUpLeg", "LeftLeg"
     };
 
-    /*private String[] bonesName = {
-        "spine_03", "neck_01",
-        "upperarm_r", "lowerarm_r", "hand_r",
-        "upperarm_l", "lowerarm_l", "hand_l",
-        "thigh_r", "calf_r",
-        "thigh_l", "calf_l"
-    };*/
     private int animationIndex;
 
     public static void main(String[] args) {
