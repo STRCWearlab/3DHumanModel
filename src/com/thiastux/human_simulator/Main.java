@@ -30,7 +30,7 @@ public class Main extends SimpleApplication {
     private Skeleton skeleton;
     private Quaternion[] animationQuaternions;
     private Quaternion[] previousQuaternions;
-    private TCPDataClient tcpDataClient;
+    private TCPDataServer tcpDataClient;
     private Bone[] bones;
     private String[] bonesName = {
         "LowerBack", "Head",
@@ -52,7 +52,7 @@ public class Main extends SimpleApplication {
     private Quaternion qAlignArmL;
 
     public Main(String[] args) {
-        tcpDataClient = new TCPDataClient(this, args);
+        tcpDataClient = new TCPDataServer(this, args);
     }
 
     @Override

@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.thiastux.human_simulator;
+package com.thiastux.human_simulator.demo;
 
+import com.thiastux.human_simulator.*;
 import com.thiastux.human_simulator.model.Stickman;
 import com.thiastux.human_simulator.model.Const;
 import com.jme3.app.SimpleApplication;
@@ -45,7 +46,7 @@ public class MainStickman extends SimpleApplication {
         app.start();
     }
 
-    private TCPDataServer tcpDataClient;
+    private TCPDataClient tcpDataClient;
     private Quaternion[] animationQuaternions;
     private HashMap<Integer, Spatial> skeletonMap = new HashMap<>();
     private Stickman stickman;
@@ -63,7 +64,7 @@ public class MainStickman extends SimpleApplication {
     }
 
     public MainStickman(String[] args) {
-        tcpDataClient = new TCPDataServer(this, args);
+        tcpDataClient = new TCPDataClient(this, args);
     }
 
     @Override
@@ -142,29 +143,58 @@ public class MainStickman extends SimpleApplication {
 
         //Normalize quaternion to adjust lost of precision using mG.
         Quaternion outputQuat = animationQuaternions[i].normalizeLocal();
-
-        if (i == 2 || i == 3 || i == 4) {
+        
+        if (i == 3 || i == 4) {
             //if (i == 2) {
             //outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
-            outputQuat = outputQuat.mult(qAlignArmR);
+            //outputQuat = outputQuat.mult(qAlignArmR);
+            //outputQuat = outputQuat.normalizeLocal();
         }
 
-        if (i == 5 || i == 6 || i == 7) {
+        if (i == 6 || i == 7) {
             //if (i == 5) {
             //outputQuat = new Quaternion(outputQuat.getX(), outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
-            outputQuat = outputQuat.mult(qAlignArmL);
+            //outputQuat = outputQuat.mult(qAlignArmL);
+            //outputQuat = outputQuat.normalizeLocal();
         }
 
-        outputQuat = outputQuat.normalizeLocal();
+        
         outputQuat = outputQuat.mult(preRot);
-
+        
+        outputQuat = new Quaternion(outputQuat.getX(), -outputQuat.getY(), outputQuat.getZ(), outputQuat.getW());
+        
         previousQuaternions[i] = outputQuat.normalizeLocal();
-
+        
         outputQuat = conjugate(getPrevLimbQuaternion(i)).mult(outputQuat);
 
         outputQuat = outputQuat.normalizeLocal();
 
         return outputQuat;
+    }
+    
+    private void computeInitialQuaternions() {
+        // Compose two rotations:
+        // First, rotate the rendered model to face inside the screen (negative z)
+        // Then, rotate the rendered model to have the torso horizontal (facing downwards, leg facing north)
+        Quaternion quat1 = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
+        Quaternion quat2 = new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f);
+        preRot = quat1.mult(quat2);
+
+        String print = String.format("qPreRot: %.1f %.1f %.1f %.1f", preRot.getW(), preRot.getX(), preRot.getY(), preRot.getZ());
+        System.out.println(print + "    ");
+
+        qAlignArmR = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
+        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qAlignArmR.getW(), qAlignArmR.getX(), qAlignArmR.getY(), qAlignArmR.getZ());
+        System.out.println(print + "    ");
+
+        qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
+        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
+        System.out.println(print + "    ");
+
+        for (int i = 0; i < 12; i++) {
+            previousQuaternions[i] = new Quaternion();
+        }
+
     }
 
     private Quaternion conjugate(Quaternion quaternion) {
@@ -278,29 +308,6 @@ public class MainStickman extends SimpleApplication {
 
     }
 
-    private void computeInitialQuaternions() {
-        // Compose two rotations:
-        // First, rotate the rendered model to face inside the screen (negative z)
-        // Then, rotate the rendered model to have the torso horizontal (facing downwards, leg facing north)
-        Quaternion quat1 = new Quaternion().fromAngles((float) Math.toRadians(-90), 0f, 0f);
-        Quaternion quat2 = new Quaternion().fromAngles(0f, (float) Math.toRadians(180), 0f);
-        preRot = quat1.mult(quat2);
-
-        String print = String.format("qPreRot: %.1f %.1f %.1f %.1f", preRot.getW(), preRot.getX(), preRot.getY(), preRot.getZ());
-        System.out.println(print + "    ");
-
-        qAlignArmR = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(90));
-        print = String.format("qRArmRot: %.1f %.1f %.1f %.1f", qAlignArmR.getW(), qAlignArmR.getX(), qAlignArmR.getY(), qAlignArmR.getZ());
-        System.out.println(print + "    ");
-
-        qAlignArmL = new Quaternion().fromAngles(0f, 0f, (float) Math.toRadians(-90));
-        print = String.format("qLArmRot: %.1f %.1f %.1f %.1f", qAlignArmL.getW(), qAlignArmL.getX(), qAlignArmL.getY(), qAlignArmL.getZ());
-        System.out.println(print + "    ");
-
-        for (int i = 0; i < 12; i++) {
-            previousQuaternions[i] = new Quaternion();
-        }
-
-    }
+    
 
 }
