@@ -10,6 +10,7 @@ import com.thiastux.human_simulator.model.Stickman;
 import com.thiastux.human_simulator.model.Const;
 import com.jme3.app.SimpleApplication;
 import com.jme3.input.ChaseCamera;
+import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -71,17 +72,19 @@ public class MainStickman extends SimpleApplication {
     public void simpleInitApp() {
         System.out.println("Application initialization started");
 
-        addReferenceSystem();
+        //addReferenceSystem();
 
         flyCam.setEnabled(false);
         ChaseCamera chaseCam = new ChaseCamera(cam, rootNode, inputManager);
-        chaseCam.setDefaultHorizontalRotation((float) Math.toRadians(90));
+        chaseCam.setDefaultHorizontalRotation((float) Math.toRadians(180));
         chaseCam.setDefaultVerticalRotation((float) Math.toRadians(30 / 2));
         chaseCam.setDefaultDistance(40f);
 
         setDisplayFps(false);
 
         setDisplayStatView(false);
+        
+        
 
         setPauseOnLostFocus(false);
 
@@ -89,7 +92,7 @@ public class MainStickman extends SimpleApplication {
 
         loadTerrain();
 
-        setLightAndShadow();
+        setSunLightAndShadow();
 
         computeInitialQuaternions();
 
@@ -251,7 +254,7 @@ public class MainStickman extends SimpleApplication {
         refNode.attachChild(yAxisGeometry);
         refNode.attachChild(zAxisGeometry);
 
-        refNode.setLocalTranslation(-10, 0, 0);
+        refNode.setLocalTranslation(10, 0, 0);
 
         rootNode.attachChild(refNode);
     }
@@ -275,9 +278,68 @@ public class MainStickman extends SimpleApplication {
         terrainGeometry.setShadowMode(ShadowMode.Receive);
 
         rootNode.attachChild(terrainGeometry);
+        
+        
     }
 
-    private void setLightAndShadow() {
+    private void setSunLightAndShadow() {
+        //Add light to the scene
+        DirectionalLight sun = new DirectionalLight();
+        sun.setColor(ColorRGBA.White);
+        sun.setDirection(new Vector3f(.5f, -.5f, -.5f).normalizeLocal());
+        rootNode.addLight(sun);
+
+        DirectionalLight sun2 = new DirectionalLight();
+        sun2.setColor(ColorRGBA.White);
+        sun2.setDirection(new Vector3f(-.5f, .5f, .5f).normalizeLocal());
+        rootNode.addLight(sun2);
+
+        rootNode.setShadowMode(ShadowMode.Off);
+
+        stickman.setShadowMode(ShadowMode.CastAndReceive);
+        terrainGeometry.setShadowMode(ShadowMode.Receive);
+
+        final int SHADOWMAP_SIZE = 512;
+        DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, SHADOWMAP_SIZE, 3);
+        dlsr.setLight(sun);
+        viewPort.addProcessor(dlsr);
+
+        DirectionalLightShadowFilter dlsf = new DirectionalLightShadowFilter(assetManager, SHADOWMAP_SIZE, 3);
+        dlsf.setLight(sun);
+        dlsf.setEnabled(true);
+        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+        fpp.addFilter(dlsf);
+        viewPort.addProcessor(fpp);
+        
+        viewPort.setBackgroundColor(ColorRGBA.White);
+
+    }
+    
+    private void setAmbientLightAndShadow(){
+        AmbientLight light = new AmbientLight();
+        light.setColor(ColorRGBA.White.mult(0.3f));
+        rootNode.addLight(light);
+        
+        DirectionalLight sun = new DirectionalLight();
+        sun.setColor(ColorRGBA.White);
+        sun.setDirection(new Vector3f(-.5f, -.5f, -.5f).normalizeLocal());
+        rootNode.addLight(sun);
+        
+        final int SHADOWMAP_SIZE = 512;
+        DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, SHADOWMAP_SIZE, 3);
+        dlsr.setLight(sun);
+        viewPort.addProcessor(dlsr);
+
+        DirectionalLightShadowFilter dlsf = new DirectionalLightShadowFilter(assetManager, SHADOWMAP_SIZE, 3);
+        dlsf.setLight(sun);
+        dlsf.setEnabled(true);
+        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+        fpp.addFilter(dlsf);
+        viewPort.addProcessor(fpp);
+    }
+    
+    private void setSunLightsAndShadows(){
+        
         //Add light to the scene
         DirectionalLight sun = new DirectionalLight();
         sun.setColor(ColorRGBA.White);
@@ -305,7 +367,18 @@ public class MainStickman extends SimpleApplication {
         FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
         fpp.addFilter(dlsf);
         viewPort.addProcessor(fpp);
+        
+        DirectionalLightShadowRenderer dlsr2 = new DirectionalLightShadowRenderer(assetManager, SHADOWMAP_SIZE, 3);
+        dlsr2.setLight(sun2);
+        viewPort.addProcessor(dlsr2);
 
+        DirectionalLightShadowFilter dlsf2 = new DirectionalLightShadowFilter(assetManager, SHADOWMAP_SIZE, 3);
+        dlsf2.setLight(sun2);
+        dlsf2.setEnabled(true);
+        FilterPostProcessor fpp2 = new FilterPostProcessor(assetManager);
+        fpp2.addFilter(dlsf2);
+        viewPort.addProcessor(fpp2);
+        
     }
 
     

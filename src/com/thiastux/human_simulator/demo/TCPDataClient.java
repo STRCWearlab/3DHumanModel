@@ -32,12 +32,11 @@ public class TCPDataClient extends Thread {
     private HashMap<Integer, Float[]> columnIndexMap;
     private Quaternion[] priorQuaternions;
     private boolean isExecuted = false;
-    private String ADDRESS = "192.168.1.120";
 
     public TCPDataClient(Object lock, String[] args) {
         this.lock = lock;
         animationPacket = new Quaternion[12];
-        initializeSocket(args[0]);
+        initializeSocket(args[0], args[1]);
         parseParameters(args);
     }
 
@@ -107,10 +106,10 @@ public class TCPDataClient extends Thread {
         try {
             //If the numbers of the parameters (-1 for the port number) isn't
             //multiple of 5, throw an exception
-            if ((args.length - 1) % 5 != 0) {
+            if ((args.length - 2) % 5 != 0) {
                 throw new WrongNumberArgsException("Wrong number of parameters!");
             }
-            for (int i = 1; i < args.length; i += 5) {
+            for (int i = 2; i < args.length; i += 5) {
 
                 //Read the command
                 String param = args[i];
@@ -152,9 +151,9 @@ public class TCPDataClient extends Thread {
         }
     }
 
-    private void initializeSocket(String port) {
+    private void initializeSocket(String address, String port) {
         try {
-            socket = new Socket(ADDRESS, Integer.parseInt(port));
+            socket = new Socket(address, Integer.parseInt(port));
             inputBuffer = new BufferedReader(
                     new InputStreamReader(
                             socket.getInputStream()));
